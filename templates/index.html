@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题库练习 · Study Quiz</title>
+    <link rel="icon" href="/favicon.ico">
+    <!-- 样式：base(变量/动画) → components(组件) → pages(页面布局) -->
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/pages.css">
+</head>
+<body>
+
+<!-- ===== 题库选择界面（启动首屏：默认可见，避免首帧闪现练习页空白壳）===== -->
+<div id="bankSelectScreen" class="bank-select-screen">
+    <div class="bank-panel">
+        <div class="panel-head">
+            <span class="seal">题</span>
+            <div>
+                <h2>选择题库</h2>
+                <p class="muted">点击题库卡片开始练习</p>
+            </div>
+        </div>
+        <div class="bank-list" id="bankCards"></div>
+        <div class="panel-footer">
+            <button class="btn btn-outline btn-sm" onclick="location.href='/'">🏠 返回工作台</button>
+            <button class="btn btn-danger-outline btn-sm" onclick="shutdownServer()">🚪 关闭程序</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 手动导入界面 ===== -->
+<div id="importScreen" class="import-screen">
+    <div class="bank-panel">
+        <div class="panel-head">
+            <span class="seal">录</span>
+            <div>
+                <h2>导入题库</h2>
+                <p class="muted">导入本地 JSON 文件；服务器题库请返回选择页</p>
+            </div>
+        </div>
+        <div class="import-controls">
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="onFileSelected(this)">
+            <button class="btn btn-outline" onclick="document.getElementById('importFile').click()" style="width:100%;padding:10px;">📁 选择本地 JSON 文件</button>
+            <span id="fileName" class="file-name"></span>
+            <button class="btn btn-primary" id="btnImport" onclick="handleImport()" style="width:100%;padding:10px;font-size:0.9rem;margin-top:8px;">🚀 导入并开始</button>
+            <button type="button" class="link-btn" onclick="openFormatGuide()" style="margin-top:8px;">📋 查看导入格式说明</button>
+        </div>
+        <label class="wrong-review-toggle">
+            <input type="checkbox" id="enableWrongReview" checked>
+            启用错题复习功能
+        </label>
+        <p id="importError" class="error-text"></p>
+    </div>
+</div>
+
+<!-- ===== 顶栏 + 分类标签（全宽区）===== -->
+<div class="top-zone">
+    <div class="header">
+        <div class="header-top">
+            <div class="brand">
+                <span class="seal">题</span>
+                <h1 id="appTitle">题库练习</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-outline btn-sm" onclick="location.href='/'" title="返回工作台">🏠</button>
+                <button class="btn btn-outline btn-sm" onclick="showBankSelectScreen()" title="切换题库">📚 题库</button>
+                <button class="btn btn-outline btn-sm" onclick="showImportDialog()" title="导入题库">📥 导入题库</button>
+                <button class="theme-toggle" onclick="toggleTheme()" title="切换深色模式">🌓</button>
+            </div>
+        </div>
+        <div class="stats-bar page-stats">
+            <span class="stat-chip">📝 总题数: <span class="num" id="totalCount">0</span></span>
+            <span class="stat-chip">📋 总已做: <span class="num" id="totalDoneCount">0</span></span>
+            <span class="stat-chip">✅ 本次已做: <span class="num" id="sessionDoneCount">0</span></span>
+            <span class="stat-chip">❌ 总错题: <span class="num" id="totalWrongCount">0</span></span>
+            <span class="stat-chip">⚠️ 本次错题: <span class="num" id="sessionWrongCount">0</span></span>
+            <span class="stat-chip">📊 正确率: <span class="num" id="accuracy">--</span></span>
+        </div>
+        <div class="progress-row">
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+            <span class="progress-text" id="progressText">准备开始练习</span>
+        </div>
+    </div>
+    <div class="section-tabs-row" id="sectionTabsRow">
+        <div class="section-tabs" id="sectionTabs"></div>
+        <button class="tabs-toggle" id="tabsToggle" style="display:none;" onclick="toggleTabsDrawer()" title="展开全部分类"><span class="tt-icon">❯</span></button>
+    </div>
+    <div class="tabs-drawer" id="tabsDrawer">
+        <div class="tabs-drawer-inner">
+            <div class="tabs-drawer-grid" id="tabsDrawerGrid"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 主内容（题目卡片列）===== -->
+<div class="container">
+    <div id="questionsContainer"></div>
+    <aside id="notePanel"></aside>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-content" id="sidebarContent"></div>
+    </div>
+    <div class="bottom-bar" id="bottomBar">
+        <div class="bottom-bar-inner">
+            <div class="bar-group">
+                <button class="btn btn-primary" onclick="startPractice()" id="btnStart">🚀 开始练习</button>
+                <label id="priorityLabel">
+                    <input type="checkbox" id="priorityNew" checked> 优先未做
+                </label>
+            </div>
+            <div class="bottom-bar-divider"></div>
+            <div class="bar-group">
+                <button class="btn btn-outline" onclick="reviewWrong()" id="btnReview" style="display:none;">🔁 复习错题</button>
+                <button class="btn btn-warn" onclick="resetWrong()" id="btnResetWrong" style="display:none;">🔄 清空错题</button>
+            </div>
+            <div class="bottom-bar-divider"></div>
+            <div class="bar-group">
+                <button class="btn btn-outline" onclick="showStats()">📊 详细统计</button>
+                <button class="btn btn-outline btn-sm" onclick="setThreshold()">⚙️ 阈值</button>
+            </div>
+        </div>
+        <select id="wrongFilter" style="display:none;" multiple size="1" onchange="onFilterChange()">
+            <option value="all" selected>全部错题</option>
+            <option value="1">错1次</option>
+            <option value="2">错2次</option>
+            <option value="3">错3次</option>
+            <option value="4">错4次</option>
+            <option value="5">错5次</option>
+        </select>
+        <label style="display:none;" id="thresholdLabel">连续答对移除：<input type="number" id="removeThreshold" value="3" min="1" style="width:50px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;text-align:center;" onchange="saveToLocalStorage()">次</label>
+    </div>
+</div>
+
+<!-- ===== 历史进度抉择对话框 ===== -->
+<div id="progressOverlay" class="modal-overlay" style="display:none;">
+    <div class="progress-dialog">
+        <h3>📌 发现历史进度</h3>
+        <div id="pdBody"></div>
+        <div class="pd-actions">
+            <button class="btn btn-primary" id="pdContinueBtn">▶ 继续上次进度</button>
+            <button class="btn btn-warn" id="pdRestartBtn">🔄 从头开始</button>
+            <button class="btn btn-outline" id="pdCancelBtn">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 脚本：按 状态 → 基础 → 数据 → 界面 → 流程 的顺序加载 -->
+<script src="/static/js/state.js"></script>
+<script src="/static/js/storage.js"></script>
+<script src="/static/js/ui.js"></script>
+<script src="/static/js/bank-loader.js"></script>
+<script src="/static/js/bank-select.js"></script>
+<script src="/static/js/import-ui.js"></script>
+<script src="/static/js/question-render.js"></script>
+<script src="/static/js/answer.js"></script>
+<script src="/static/js/matching.js"></script>
+<script src="/static/js/practice.js"></script>
+<script src="/static/js/navigation.js"></script>
+<script src="/static/js/stats.js"></script>
+<script src="/static/js/main.js"></script>
+<script src="/static/js/format-guide.js"></script>
+</body>
+</html>
