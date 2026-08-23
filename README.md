@@ -28,7 +28,7 @@
 ## 🚀 快速开始
 
 ### 方式一：下载 EXE（Windows）
-前往 [Releases](../../releases) 页面下载最新的 `学习工作台.exe`，双击即可运行。
+前往 [Releases](../../releases) 页面下载最新附件 `StudyWorkbench-v1.2-windows-x64.exe`，双击即可运行。
 
 ### 方式二：Python 源码运行
 ```bash
