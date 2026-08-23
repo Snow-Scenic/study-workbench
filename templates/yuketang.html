@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!-- 刷课（雨课堂控制台）模块基于 https://github.com/Gary-666/yuketang 修改集成，
+     当前为离线演示模式（Mock），真实执行暂只支持长江雨课堂。 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>雨课堂刷课控制台 · DEMO</title>
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/yuketang.css">
+</head>
+<body data-view="idle">
+<div class="yk-app">
+
+  <!-- ===== 顶部 HUD ===== -->
+  <header class="yk-hud">
+    <div class="hud-left">
+      <button class="btn btn-outline btn-sm" onclick="location.href='/'">← 返回工作台</button>
+      <span class="yk-seal">雨</span>
+      <span class="hud-title">雨课堂 · 刷课控制台<br><em>YUKETANG CONSOLE</em></span>
+      <span class="state-badge" id="stateBadge"><i class="dot"></i><b id="stateText">空闲</b></span>
+    </div>
+    <div class="hud-chips" id="hudChips">
+      <span class="chip"><b id="stTotal">0</b><i>任务总数</i></span>
+      <span class="chip ok"><b id="stDone">0</b><i>已完成</i></span>
+      <span class="chip warn"><b id="stActive">0</b><i>进行中</i></span>
+      <span class="chip"><b id="stQueued">0</b><i>排队中</i></span>
+      <span class="chip bad"><b id="stFailed">0</b><i>失败</i></span>
+    </div>
+    <div class="hud-right">
+      <span class="mock-badge" id="mockBadge">演示模式 · 离线模拟 · 不访问网络</span>
+      <button class="btn btn-outline btn-sm" id="btnSettings" onclick="toggleSettings()">⚙ 参数回看</button>
+    </div>
+  </header>
+
+  <!-- ===== 配置面板（idle 主视觉）===== -->
+  <section class="yk-config" id="configPanel">
+    <div class="cfg-card">
+      <h2>课程接入参数</h2>
+      <p class="muted">参数仅保存在本机内存与浏览器（认证字段不落盘），第一阶段为离线模拟。</p>
+      <div class="cfg-grid cfg-auth">
+        <label>课堂 ID<input id="f_classroom_id" placeholder="如 12345678"></label>
+        <label>签名 SIGN<input id="f_sign" placeholder="URL 中的 sign 参数"></label>
+        <label>学校 ID<input id="f_university_id" placeholder="学校 ID / uv_id"></label>
+        <label>CSRF 令牌<input id="f_csrf_token" type="password" placeholder="Cookie: csrftoken"></label>
+        <label>会话 ID<input id="f_session_id" type="password" placeholder="Cookie: sessionid"></label>
+      </div>
+      <details class="run-params">
+        <summary>运行参数（对应原脚本 .env 配置）</summary>
+        <div class="cfg-grid">
+          <label>视频倍速<input id="f_video_speed" value="1.5"></label>
+          <label>心跳间隔（秒）<input id="f_heartbeat_interval" value="5"></label>
+          <label>最大并发数<input id="f_max_workers" value="3"></label>
+          <label>试看视频数<input id="f_test_video_count" value="5"></label>
+          <label>图文停留（秒）<input id="f_richtext_stay_seconds" value="3"></label>
+          <label>图文跳过延迟（秒）<input id="f_richtext_skip_delay" value="1"></label>
+          <span class="chk"><input type="checkbox" id="f_use_concurrent" checked><em>启用并发执行</em></span>
+          <span class="chk"><input type="checkbox" id="f_skip_completed" checked><em>跳过已完成</em></span>
+          <span class="chk"><input type="checkbox" id="f_auto_richtext" checked><em>自动处理图文</em></span>
+          <span class="chk"><input type="checkbox" id="f_test_mode"><em>测试模式</em></span>
+          <span class="chk"><input type="checkbox" id="f_debug"><em>调试（快速模拟）</em></span>
+        </div>
+      </details>
+      <div class="cfg-actions">
+        <button class="btn btn-outline" onclick="fillDemoParams()">◈ 一键填入演示参数</button>
+        <button class="btn btn-primary yk-btn-lg" id="btnAnalyze" onclick="doAnalyze()">◈ 分析课程结构</button>
+      </div>
+      <p class="err" id="cfgError"></p>
+    </div>
+
+    <!-- 侧栏：流程说明 + 状态图例（填充 idle 态留白） -->
+    <aside class="yk-side">
+      <div class="side-card">
+        <h4>◈ 操作指引</h4>
+        <ol class="side-steps">
+          <li><b>填写接入参数</b><span>课堂 ID / sign / Cookie 等仅保存在本机内存与浏览器</span></li>
+          <li><b>分析课程结构</b><span>扫描课程，生成任务时间线</span></li>
+          <li><b>开始执行</b><span>多线程执行任务，可随时停止；结束后点「重新配置」换下一门课</span></li>
+        </ol>
+      </div>
+      <div class="side-card">
+        <h4>◈ 状态图例</h4>
+        <ul class="side-legend">
+          <li><i class="lg-dot d-running"></i>执行中</li>
+          <li><i class="lg-dot d-done"></i>已完成</li>
+          <li><i class="lg-dot d-skip"></i>已跳过</li>
+          <li><i class="lg-dot d-stop"></i>已停止</li>
+          <li><i class="lg-dot d-fail"></i>失败</li>
+        </ul>
+      </div>
+      <div class="side-card demo-note">
+        演示模式——全流程离线模拟，不产生任何真实网络请求；认证参数不会写入磁盘。
+      </div>
+    </aside>
+  </section>
+
+  <!-- ===== 扫描视图（analyzing）===== -->
+  <section class="yk-scanning" id="scanPanel" hidden>
+    <div class="scan-core">
+      <div class="scan-ring"><div class="scan-sweep"></div><div class="scan-core-dot"></div></div>
+      <h2>正在扫描课程</h2>
+      <p class="scan-phase" id="scanPhase">正在获取课程数据</p>
+      <p class="scan-count">已发现 <b id="discovered">0</b> 个任务</p>
+    </div>
+  </section>
+
+  <!-- ===== 主控台：Timeline + Execution Core ===== -->
+  <main class="yk-console" id="consolePanel" hidden>
+    <aside class="yk-timeline-wrap panel">
+      <h3>课程时间线</h3>
+      <ol class="timeline" id="timeline"></ol>
+    </aside>
+    <section class="yk-exec">
+      <div class="exec-current panel">
+        <h4>当前任务</h4>
+        <div id="curBody"><p class="muted">暂无执行中的任务</p></div>
+      </div>
+      <div class="exec-workers panel">
+        <h4>执行线程</h4>
+        <div id="workersBox"><p class="muted">空闲 · 无执行线程</p></div>
+      </div>
+      <div class="terminal-banner" id="terminalBanner" hidden></div>
+      <div class="exec-actions" id="execActions"></div>
+    </section>
+  </main>
+
+  <!-- ===== 设置抽屉（非 idle 态查看掩码参数）===== -->
+  <aside class="settings-drawer panel" id="settingsDrawer" hidden>
+    <h4>本次会话参数（敏感字段已脱敏） <a href="javascript:void(0)" onclick="toggleSettings()" style="float:right">✕</a></h4>
+    <pre id="settingsBody" class="mono"></pre>
+  </aside>
+
+  <!-- ===== 底部日志抽屉 ===== -->
+  <footer class="yk-logs">
+    <button class="logs-toggle" id="logsToggle" onclick="toggleLogs()">▾ 系统日志（<span id="logCount">0</span> 条）</button>
+    <pre id="logBox" hidden class="mono"></pre>
+  </footer>
+</div>
+<script src="/static/js/yuketang.js"></script>
+</body>
+</html>
