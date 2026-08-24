@@ -106,10 +106,11 @@ Rules: `id` must be unique across the whole bank; invalid questions are skipped;
 ├── static/
 │   ├── css/               # base(design tokens·themes) → components → pages
 │   └── js/                # Front-end modules (state/storage/render/answer/nav/stats…)
-├── tests/                 # pytest backend suite (28 cases)
+├── tests/                 # pytest backend suite (67 cases)
 ├── examples/              # demo-bank.json covering every question type
+├── build.bat              # one-command EXE packaging (PyInstaller)
 ├── CHANGELOG.md           # Changelog (current: v1.2.1)
-└── 学习工作台.spec         # PyInstaller spec
+└── LICENSE                # MIT
 ```
 
 Runtime folders (git-ignored): `question_banks/`, `dist/`, `build/`.
