@@ -102,7 +102,7 @@ def test_analyze_param_error_marks_job_error():
 
     mgr = YukeJobManager(core_factory=BadCore)
     # 直接注入绕过 manager 层校验，模拟核心内失败
-    mgr._begin_analyze(validate_params(AUTH_OK), lambda: BadCore())
+    mgr._begin_analyze(validate_params(AUTH_OK), BadCore())
     snap = wait_state(mgr, ("error",))
     assert "sign" in snap["error"]
 

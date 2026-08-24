@@ -6,6 +6,9 @@ import urllib.request
 
 import pytest
 
+import config
+config.CORE_IMPL = "mock"        # 集成测试钉住演示核心，禁止真实网络
+
 from server import MyHandler
 
 AUTH_OK = {

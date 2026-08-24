@@ -78,13 +78,27 @@ def validate_params(payload):
     return params
 
 
-def get_core():
-    """CORE_IMPL 选择器"""
+def get_core(params=None):
+    """CORE_IMPL 选择器。
+
+    - 'mock'  : 强制演示核心
+    - 'real'  : 强制真实核心（需 config.YUKETANG_SRC_DIR 指向上游脚本）
+    - 'auto'  : 默认。classroom_id 命中演示哨兵（demo*/111/test/000）→ Mock，
+                否则走真实核心
+    """
     import config
-    impl = getattr(config, "CORE_IMPL", "mock")
-    if impl == "mock":
+    impl = str(getattr(config, "CORE_IMPL", "auto")).lower()
+    cid = str((params or {}).get("classroom_id", "")).strip().lower()
+    demo = (cid.startswith("demo") or cid in ("111", "000", "test"))
+    if impl == "real":
+        from yuketang_adapter import RealYukeCore
+        return RealYukeCore(dict(params or {}))
+    if impl == "mock" or demo:
         return MockCore()
-    raise NotImplementedError(f"核心实现 '{impl}' 尚未接入（RealCore 属第二阶段）")
+    if impl in ("auto", ""):
+        from yuketang_adapter import RealYukeCore
+        return RealYukeCore(dict(params or {}))
+    return MockCore()
 
 
 # ---------------- MockCore ----------------

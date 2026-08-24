@@ -254,29 +254,44 @@ body[data-view="idle"] .yk-console, body[data-view="analyzing"] .yk-console { di
 .terminal-banner.warn { border-color: rgba(240, 160, 62, 0.5); }
 .terminal-banner.bad  { border-color: rgba(255, 93, 93, 0.5); }
 
-/* ---- 设置抽屉 ---- */
-.settings-drawer {
-    position: fixed; right: 18px; top: 74px; width: min(360px, 92vw);
-    max-height: 70vh; overflow-y: auto; padding: 16px 18px; z-index: 90;
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+/* ---- 迷你终端：实时日志常驻小窗（最新最深、越旧越淡）---- */
+.yk-logs { padding: 0 0 16px; }
+.term {
+    background: rgba(255, 255, 255, 0.66);
+    border: 1px solid rgba(120, 165, 230, 0.35);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 24px rgba(50, 90, 160, 0.10);
+    backdrop-filter: blur(10px);
 }
-.settings-drawer pre { white-space: pre-wrap; word-break: break-all; font-size: 0.78rem; color: var(--yk-text); }
-
-/* ---- 日志抽屉 ---- */
-.yk-logs { padding: 0 22px 14px; max-width: 1400px; width: 100%; margin: 0 auto; box-sizing: border-box; }
-.logs-toggle {
-    width: 100%; text-align: left; background: rgba(17, 25, 38, 0.7);
-    border: 1px solid var(--yk-line); color: var(--yk-muted);
-    border-radius: 10px; padding: 9px 14px; cursor: pointer;
-    font-size: 0.72rem; letter-spacing: 0.14em;
+.term-head {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 14px;
+    background: rgba(40, 90, 170, 0.08);
+    border-bottom: 1px solid rgba(120, 165, 230, 0.25);
+    font-size: 0.74rem; letter-spacing: 0.08em; color: #33486B;
 }
-.logs-toggle:hover { color: var(--yk-accent); border-color: var(--yk-accent); }
-#logBox {
-    margin-top: 8px; padding: 12px 14px; max-height: 260px; overflow-y: auto;
-    background: rgba(6, 10, 17, 0.85); border: 1px solid var(--yk-line);
-    border-radius: 10px; font-size: 0.74rem; line-height: 1.65;
-    white-space: pre-wrap; word-break: break-all;
+.term-head b { font-weight: 700; }
+.term-head i { font-style: normal; color: #56719A; margin-left: auto; }
+.term-dot { width: 9px; height: 9px; border-radius: 50%; }
+.term-dot:nth-child(1) { background: #FF5F57; }
+.term-dot:nth-child(2) { background: #FEBC2E; }
+.term-dot:nth-child(3) { background: #28C840; }
+.term-body {
+    margin: 0; padding: 8px 14px; height: 118px;
+    font-size: 0.74rem; line-height: 1.75; color: #33486B;
+    overflow-y: auto;
+    opacity: 0.62;                                   /* 平时更虚 */
+    transition: opacity 0.3s ease;
 }
+.term:hover .term-body { opacity: 1; }               /* 悬停回实（保留行级渐变） */
+.t-line { display: flex; gap: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t-ts { color: rgba(40, 90, 170, 0.55); flex-shrink: 0; }
+.t-lv { color: #1273D4; font-weight: 700; flex-shrink: 0; width: 52px; }
+.t-lv.lg-error { color: #DC2626; }
+.t-lv.lg-warn  { color: #D97706; }
+.t-msg { overflow: hidden; text-overflow: ellipsis; }
+.t-empty { color: rgba(34, 51, 78, 0.45); letter-spacing: 0.06em; }
 .lg-error { color: var(--yk-bad); }
 .lg-warn  { color: var(--yk-warn); }
 .lg-task_done, .lg-discover { color: var(--yk-ok); }
@@ -324,9 +339,15 @@ body[data-view="idle"] .yk-console, body[data-view="analyzing"] .yk-console { di
 .yk-config {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(250px, 330px);
-    gap: 20px; align-items: start;
+    gap: 20px; align-items: stretch;
     padding: 40px 0 8px;
 }
+/* 两列等高：左卡拉伸与右栏对齐；卡内空间均匀分布（避免单一大空洞） */
+.yk-config > .cfg-card {
+    display: flex; flex-direction: column;
+    justify-content: space-between; gap: 12px;
+}
+.yk-config > .cfg-card .cfg-actions { margin-top: auto; }
 /* 认证参数网格：6 列体系，上排三项各占 2 列、下排两项各占 3 列，不留空洞 */
 .cfg-grid.cfg-auth { grid-template-columns: repeat(6, 1fr); }
 .cfg-grid.cfg-auth > label { grid-column: span 2; }
@@ -1068,3 +1089,232 @@ body {
 #logBox::-webkit-scrollbar-thumb:hover,
 .settings-drawer::-webkit-scrollbar-thumb:hover { background: rgba(40, 110, 220, 0.55); }
 .yk-app .btn-outline { color: #16294A; font-weight: 600; }
+
+/* ============================================================
+   v6 精修：复选框高级化 + 布局呼吸感微调
+   ============================================================ */
+
+/* ---- 运行参数复选框：圆角填充式（替换原生黑框）---- */
+.chk input[type="checkbox"] {
+    -webkit-appearance: none; appearance: none;
+    width: 19px; height: 19px; margin: 0;
+    border: 1.5px solid rgba(40, 90, 170, 0.45);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.9);
+    display: inline-grid; place-content: center;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease,
+                box-shadow 0.18s ease;
+}
+.chk input[type="checkbox"]::before {
+    content: '';
+    width: 11px; height: 11px;
+    clip-path: polygon(14% 44%, 0 62%, 44% 100%, 100% 18%, 82% 4%, 40% 66%);
+    background: #FFFFFF;
+    transform: scale(0);
+    transform-origin: center;
+    transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.chk input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, #2079DE, #3ED6FF);
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(41, 168, 240, 0.4);
+}
+.chk input[type="checkbox"]:checked::before { transform: scale(1); }
+.chk input[type="checkbox"]:hover {
+    border-color: rgba(30, 115, 212, 0.8);
+    box-shadow: 0 0 0 4px rgba(56, 150, 255, 0.12);
+}
+
+/* ---- 布局呼吸感 ---- */
+.yk-config { padding-top: 28px; }
+.cfg-card { padding: 24px 30px 22px; }
+.run-params { margin-bottom: 14px; }
+.yk-side { gap: 12px; }
+.side-card { padding: 15px 18px; }
+.side-steps span { font-size: 0.76rem; line-height: 1.6; }
+
+/* ---- v6.3：配置页密度提升 + 指引文案配套样式 ---- */
+.g-code {
+    display: inline-block;
+    font-family: Consolas, monospace; font-size: 0.68rem;
+    color: #14406E; background: rgba(40, 110, 220, 0.08);
+    border: 1px solid rgba(40, 110, 220, 0.22); border-radius: 5px;
+    padding: 1px 6px; margin: 2px 2px 0 0;
+}
+.g-tip { margin: 6px 0 0; font-size: 0.68rem; color: rgba(34,51,78,.55); }
+.g-flow { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.g-flow li { font-size: 0.72rem; color: #44566F; line-height: 1.45; }
+.g-flow li b { color: #22334E; margin-right: 4px; }
+.demo-note { font-size: 0.7rem; }
+
+/* ---- 配置页密度与空间分布（最终整合版）---- */
+.yk-config { padding-top: 20px; overflow-y: auto; }
+.yk-config .cfg-card {
+    padding: 20px 26px 18px;
+    display: flex; flex-direction: column;
+    justify-content: space-between; gap: 12px;   /* 卡内空间均匀分布 */
+}
+.yk-config .cfg-card .cfg-actions { margin-top: 0; }   /* 覆盖旧 auto 规则，防止单一大空洞 */
+.cfg-card h2 { font-size: 0.92rem; margin-bottom: 2px; }
+.cfg-card > .muted { font-size: 0.76rem; margin-bottom: 10px; }
+.cfg-grid { gap: 12px 14px; margin-bottom: 6px; }
+.cfg-grid label { font-size: 0.7rem; }
+.cfg-grid input { padding: 9px 13px; font-size: 0.86rem; }
+.run-params { margin-bottom: 4px; padding: 10px 14px; }
+.run-params summary { font-size: 0.7rem; }
+.cfg-actions { margin-top: 6px; }
+.err { min-height: 0.9em; margin: 6px 0 0; }
+.yk-side { gap: 12px; animation: none; }
+.side-card { padding: 15px 18px; }
+.side-card h4 { margin-bottom: 10px; font-size: 0.68rem; }
+.side-steps { gap: 11px; }
+.side-steps span { font-size: 0.75rem; line-height: 1.55; }
+.g-code {
+    display: inline-block; font-family: Consolas, monospace; font-size: 0.7rem;
+    color: #14406E; background: rgba(40, 110, 220, 0.08);
+    border: 1px solid rgba(40, 110, 220, 0.22); border-radius: 5px;
+    padding: 1px 6px; margin: 2px 2px 0 0;
+}
+.g-tip { margin: 8px 0 0; font-size: 0.7rem; color: rgba(34, 51, 78, 0.55); }
+.g-flow { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.g-flow li { font-size: 0.74rem; color: #44566F; line-height: 1.5; }
+.g-flow li b { color: #22334E; margin-right: 6px; }
+.demo-note { font-size: 0.72rem; }
+
+/* ---- 提示条：有内容时占满卡宽的圆角横幅 ---- */
+.err { min-height: 0.9em; margin: 8px 0 0; font-size: 0.8rem; }
+/* 吸底提示条：展开运行参数等内容超高时依然悬浮可见 */
+.err:not(:empty) {
+    display: block; width: 100%; box-sizing: border-box;
+    padding: 9px 13px; border-radius: 9px;
+    color: #B91C1C;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(220, 38, 38, 0.35);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.15);
+    position: sticky; bottom: 10px; z-index: 6;
+    animation: ykNoticeIn 0.25s ease;
+}
+@keyframes ykNoticeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* ---- 日志终端随视图切换渐隐渐现 ---- */
+@keyframes ykLogsSwap {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+}
+.yk-logs.yk-fade { animation: ykLogsSwap 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* 中间视图区兜底：万一内容仍超高，在分区内滚动而不是压到日志区 */
+.yk-config, .yk-scanning, .yk-console {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(40, 110, 220, 0.3) transparent;
+}
+
+/* ============================================================
+   v6.1 布局终裁：控制台行高由视口与右列决定，左列时间线只填充
+   不撑高（内部滚动），日志脚注恒定停在底部胶囊区之上
+   ============================================================ */
+.yk-app { height: 100vh; padding-bottom: 118px; }
+.yk-console { align-items: stretch; padding-bottom: 0; }
+.yk-exec { min-height: 0; }
+.yk-timeline-wrap {
+    display: flex; flex-direction: column;
+    height: 100%; max-height: none; min-height: 0;
+    overflow: hidden;
+    padding: 10px 8px 4px 2px;
+    -webkit-mask-image: none; mask-image: none;
+}
+.yk-timeline-wrap h3 { flex-shrink: 0; }
+.timeline {
+    flex: 1 1 0; min-height: 0;
+    overflow-y: auto;
+    -webkit-mask-image: linear-gradient(180deg, #000 85%, rgba(0, 0, 0, 0) 99%);
+    mask-image: linear-gradient(180deg, #000 85%, rgba(0, 0, 0, 0) 99%);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(40, 110, 220, 0.35) transparent;
+}
+.timeline::-webkit-scrollbar { width: 9px; }
+.timeline::-webkit-scrollbar-track { background: transparent; }
+.timeline::-webkit-scrollbar-thumb {
+    background: rgba(40, 110, 220, 0.18);
+    border-radius: 99px;
+    transition: background 0.25s ease;
+}
+.timeline:hover::-webkit-scrollbar-thumb,
+.timeline::-webkit-scrollbar-thumb:hover { background: rgba(40, 110, 220, 0.5); }
+
+/* ============================================================
+   v7 时间线氛围层：距离渐隐 + 悬停提亮 + 连接段补全
+   （--fade 由 JS 按节点与运行锚点的距离注入；悬停列表整体回实）
+   ============================================================ */
+.tl-node {
+    opacity: var(--fade, 1);
+    transition: opacity 0.3s ease, background 0.2s ease;
+}
+.yk-timeline-wrap:hover .tl-node { opacity: calc(0.72 + var(--fade, 1) * 0.28); }
+.yk-timeline-wrap:hover .tl-node.completed,
+.yk-timeline-wrap:hover .tl-node.running { opacity: 1; }
+
+/* 轨道：平时更虚，悬停列表时流光变实 */
+.timeline::before {
+    display: block;
+    left: 12px; width: 4px; border-radius: 99px;
+    background: linear-gradient(180deg,
+        rgba(40, 110, 220, 0.05) 0%,
+        rgba(40, 110, 220, 0.14) 45%,
+        rgba(41, 168, 240, 0.38) 100%);
+    box-shadow: none;
+    transition: all 0.35s ease;
+}
+.yk-timeline-wrap:hover .timeline::before {
+    background: linear-gradient(180deg,
+        rgba(40, 110, 220, 0.10) 0%,
+        rgba(40, 110, 220, 0.26) 45%,
+        rgba(41, 168, 240, 0.62) 100%);
+    box-shadow: 0 0 12px rgba(41, 168, 240, 0.25);
+}
+
+/* 相邻已完成节点之间的发光连接段（补全"两勾之间空白"）*/
+.tl-node.completed::after {
+    content: ''; position: absolute; left: 12px; top: 30px; bottom: -12px;
+    width: 4px; border-radius: 99px;
+    background: linear-gradient(180deg, rgba(41, 168, 240, 0.9), rgba(41, 168, 240, 0.4));
+    box-shadow: 0 0 8px rgba(41, 168, 240, 0.4);
+}
+.tl-node:last-child::after { display: none; }
+
+/* ============================================================
+   v6.2 栅格终裁：显式行分配，终结"隐藏子元素导致的行错位"
+   （旧模板 auto auto 1fr auto 隐式依赖可见子元素顺序，视图切换
+     时日志曾被塞进 1fr 行、控制台被挤出视口）
+   ============================================================ */
+.yk-app {
+    display: grid;
+    grid-template-rows: auto auto auto auto;   /* 全 auto：日志窗紧跟内容流，杜绝重叠 */
+}
+.yk-hud { grid-row: 1; }
+.yk-config, .yk-scanning, .yk-console { grid-row: 2; }
+.yk-logs { grid-row: 3; }
+
+/* ============================================================
+   v6.4 终版布局（修订）：显式三行 + 中间行弹性填充
+   行分配：HUD=auto / 主视图(配置|扫描|控制台)=minmax(0,1fr) / 日志=auto
+   控制台内部：时间线 flex 填充并内部滚动，绝不撑爆行高
+   ============================================================ */
+.yk-app {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 100vh;
+    padding-bottom: 118px;
+    overflow: hidden;
+}
+.yk-hud { grid-row: 1; padding: 10px 20px; }
+.yk-config, .yk-scanning, .yk-console { grid-row: 2; }
+.yk-logs { grid-row: 3; margin-top: 14px; padding-bottom: 12px; }
+.yk-console { max-height: none; overflow: hidden; }
+.cfg-card { width: auto; max-width: none; }
+.yk-config { padding-top: 16px; }

@@ -136,7 +136,18 @@ async function renderNow() {
 
 const STATE_LABEL = { idle: '空闲', analyzing: '分析中', ready: '待启动', running: '执行中', finished: '已完成', stopped: '已停止', error: '错误' };
 
-function setView(state) { document.body.dataset.view = state; }
+function setView(state) {
+    // 视图切换时，日志终端窗与其他内容一起渐隐渐现（保持整页动效一致）
+    if (document.body.dataset.view !== state) {
+        document.body.dataset.view = state;
+        const foot = document.querySelector('.yk-logs');
+        if (foot) {
+            foot.classList.remove('yk-fade');
+            void foot.offsetWidth;            // 强制回流以重启动画
+            foot.classList.add('yk-fade');
+        }
+    }
+}
 
 function render(snap) {
     setView(snap.state);
@@ -174,12 +185,7 @@ function render(snap) {
         renderTerminal(snap);
     }
 
-    // 设置抽屉内容
-    if (!$('settingsDrawer').hidden && snap.params_masked) {
-        $('settingsBody').textContent = JSON.stringify(snap.params_masked, null, 2);
-    }
-
-    // 日志
+    // 日志：计数徽标 + 终端小窗（最近 6 条，最新最深、越旧越淡）
     renderLogs((snap.logs || []).slice(-200));
 
     // STOPPING 恢复：state 离开 running 后重置本地停止标记
@@ -190,13 +196,23 @@ function renderTimeline(tasks) {
     const key = tasks.map(t => t.id + t.status + t.pct).join('|');
     if (key === lastTasksKey) return;
     lastTasksKey = key;
-    $('timeline').innerHTML = tasks.map(t =>
-        `<li class="tl-node ${t.status}">
+    // 氛围锚点：优先运行中节点，否则最后一个已完成节点
+    let anchor = tasks.findIndex(t => t.status === 'running');
+    if (anchor < 0) {
+        for (let i = tasks.length - 1; i >= 0; i--) {
+            if (tasks[i].status === 'completed') { anchor = i; break; }
+        }
+    }
+    $('timeline').innerHTML = tasks.map((t, i) => {
+        const dist = anchor < 0 ? 0 : Math.abs(i - anchor);
+        const fade = Math.max(0.38, 1 - dist * 0.10).toFixed(2);   // 越远越淡
+        return `<li class="tl-node ${t.status}" style="--fade:${fade}">
             <span class="dot"></span>
             <span class="tl-name">${esc(t.name)}</span>
             <span class="tl-chapter">${esc(t.chapter)}</span>
             <span class="tl-pct">${t.pct}%</span>
-         </li>`).join('');
+         </li>`;
+    }).join('');
 }
 
 function renderExec(snap) {
@@ -264,25 +280,27 @@ function renderTerminal(snap) {
 }
 
 function renderLogs(logs) {
-    $('logCount').textContent = logs.length;
+    const badge = $('logCount');
+    if (badge) badge.textContent = `${logs.length} 条`;
+    const tail = $('logTail');
+    if (!tail) return;
     const key = logs.length + ':' + (logs.length ? logs[logs.length - 1].ts : '');
     if (key === renderLogs._k) return;
     renderLogs._k = key;
-    $('logBox').textContent = logs.map(l =>
-        `[${new Date(l.ts * 1000).toLocaleTimeString()}] ${l.level.toUpperCase()} ${l.event}${l.task_id ? ' ' + l.task_id : ''} ${l.msg}`
-    ).join('\n');
-}
-
-function toggleLogs() {
-    const box = $('logBox');
-    box.hidden = !box.hidden;
-    $('logsToggle').textContent = (box.hidden ? '▾' : '▴') + $('logsToggle').textContent.slice(1);
-}
-
-function toggleSettings() {
-    const d = $('settingsDrawer');
-    d.hidden = !d.hidden;
-    if (!d.hidden) renderNow();
+    const recent = logs.slice(-6);
+    if (!recent.length) {
+        tail.innerHTML = '<span class="t-empty">暂无日志 —— 分析课程后此处实时滚动显示</span>';
+        return;
+    }
+    // 最新在最下方（终端惯例），透明度自下而上递减：最新最深、越旧越淡
+    tail.innerHTML = recent.map((l, i) => {
+        const fade = 0.30 + 0.70 * ((i + 1) / recent.length);   // 0.30 → 1.0
+        const lvl = l.level === 'error' ? 'lg-error' : (l.level === 'warn' ? 'lg-warn' : '');
+        return `<div class="t-line" style="opacity:${fade.toFixed(2)}">` +
+               `<span class="t-ts">${new Date(l.ts * 1000).toLocaleTimeString()}</span>` +
+               `<span class="t-lv ${lvl}">${esc(l.level.toUpperCase())}</span>` +
+               `<span class="t-msg">${esc(l.msg || l.event)}</span></div>`;
+    }).join('');
 }
 
 function esc(s) {
@@ -311,4 +329,21 @@ window.addEventListener('load', () => {
     loadRunParams();
     renderNow();          // 刷新后按服务端真实状态恢复视图
     startPolling();
+    // ?layoutdebug=1：把关键元素渲染坐标写入标题（布局自检/回归用）
+    if (new URLSearchParams(location.search).has('layoutdebug')) {
+        setTimeout(() => {
+            const r = (sel) => {
+                const e = document.querySelector(sel);
+                if (!e) return null;
+                const b = e.getBoundingClientRect();
+                return { top: +b.top.toFixed(1), bottom: +b.bottom.toFixed(1), left: +b.left.toFixed(1), right: +b.right.toFixed(1) };
+            };
+            document.title = 'LD ' + JSON.stringify({
+                actions: r('.exec-actions'), term: r('.term'),
+                logs: r('.yk-logs'), timeline: r('.yk-timeline-wrap'),
+                side: r('.yk-side'), cfgCard: r('.cfg-card'),
+                state: document.body.dataset.view,
+            });
+        }, 1500);
+    }
 });
