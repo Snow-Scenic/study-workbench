@@ -2,6 +2,7 @@
 import json
 import os
 import threading
+import time
 import http.server
 from urllib.parse import urlparse, unquote
 
@@ -11,6 +12,14 @@ from yuketang_manager import YukeJobManager
 
 # 进程内唯一管理器：导入时创建（构造无副作用），避免多线程首次请求竞态
 _YUKE_MANAGER = YukeJobManager()
+
+# ---- 浏览器存活看门狗：任何请求都刷新活跃时间；超时无信号则由入口层关停释放端口 ----
+_LAST_SEEN = time.time()
+
+
+def touch_alive():
+    global _LAST_SEEN
+    _LAST_SEEN = time.time()
 
 
 def _scan_question_banks():
@@ -122,12 +131,18 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
+        touch_alive()
 
         if path == '/shutdown':
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b'Server shutting down...')
             threading.Thread(target=self.server.shutdown).start()
+            return
+
+        if path == '/beacon':                    # 前端存活信号（空响应）
+            self.send_response(204)
+            self.end_headers()
             return
 
         if path == '/':
@@ -207,6 +222,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
+        touch_alive()
 
         try:
             length = int(self.headers.get('Content-Length') or 0)

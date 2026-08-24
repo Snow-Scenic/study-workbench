@@ -19,3 +19,6 @@ dist/
 
 # 用户题库数据（不入库）
 question_banks/
+
+# PyInstaller 自动生成的 spec（由 build.bat 参数重建）
+StudyWorkbench.spec

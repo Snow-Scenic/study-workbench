@@ -32,6 +32,12 @@
 ### Option 1: Download the EXE (Windows)
 Grab the latest `StudyWorkbench-v*-windows-x64.exe` from the [Releases](../../releases) page and double-click to run.
 
+> **⚠️ Windows tips**
+> - **Move it to a writable folder first** (e.g. `D:\StudyWorkbench\`) before running — imported banks are saved to `question_banks\` next to the exe, which can fail inside `C:\Program Files\` or straight from an un-extracted zip.
+> - **SmartScreen notice**: the EXE is not code-signed. On first launch click *More info → Run anyway*.
+> - **Progress lives in your browser** (localStorage bound to `localhost:8000`). Switching browsers — or the app hopping to port 8001 when 8000 is busy — starts a fresh slate on that origin.
+> - **Auto-exit**: closing all pages shuts the background server down within ~15 s, releasing the port. Reopening a page during that window keeps it alive.
+
 ### Option 2: Run from source
 ```bash
 pip install -r requirements.txt   # requests
