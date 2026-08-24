@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>学习工作台 · Study Hub</title>
     <link rel="icon" href="/favicon.ico">
-    <link rel="stylesheet" href="/static/css/base.css">
-    <link rel="stylesheet" href="/static/css/components.css">
-    <link rel="stylesheet" href="/static/css/pages.css">
-    <link rel="stylesheet" href="/static/css/hub.css">
+    <link rel="stylesheet" href="/static/css/base.css?v=1.2">
+    <link rel="stylesheet" href="/static/css/components.css?v=1.2">
+    <link rel="stylesheet" href="/static/css/pages.css?v=1.2">
+    <link rel="stylesheet" href="/static/css/hub.css?v=1.2">
 </head>
 <body>
 <div class="hub-wrap">
@@ -54,8 +54,12 @@
         <button class="btn btn-primary" onclick="ackLegal()">✅ 我已知晓，进入工作台</button>
     </div>
 </div>
-<script src="/static/js/hub.js"></script>
-<script src="/static/js/format-guide.js"></script>
-<script src="/static/js/bank-select.js"></script>
+<script src="/static/js/hub.js?v=1.2"></script>
+<script src="/static/js/format-guide.js?v=1.2"></script>
+<script src="/static/js/bank-select.js?v=1.2"></script>
+<script>
+// 存活信号：告知服务端浏览器仍开着（超时无信号服务端自动退出释放端口）
+setInterval(function () { fetch('/beacon').catch(function () {}); }, 3000);
+</script>
 </body>
 </html>

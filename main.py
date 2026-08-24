@@ -5,6 +5,7 @@ import atexit
 import ctypes
 import socket
 import threading
+import time
 import traceback
 import socketserver
 import webbrowser
@@ -83,6 +84,19 @@ def run_server():
             args=(url,),
             daemon=True,
         ).start()
+
+        # 浏览器存活看门狗：超时无任何请求 → 自动关停释放端口
+        def browser_watchdog():
+            import server as srv
+            limit = getattr(config, "BROWSER_WATCHDOG_SECONDS", 15)
+            while True:
+                time.sleep(1)
+                if time.time() - srv._LAST_SEEN > limit:
+                    print("\n检测到浏览器已关闭，自动退出并释放端口...")
+                    httpd.shutdown()
+                    break
+
+        threading.Thread(target=browser_watchdog, daemon=True).start()
 
         # 启动服务器
         httpd.serve_forever()

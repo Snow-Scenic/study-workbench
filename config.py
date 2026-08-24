@@ -22,3 +22,7 @@ PORT = 8000
 # 'mock' / 'real' = 强制指定
 CORE_IMPL = "auto"
 YUKETANG_SRC_DIR = os.path.join(os.path.dirname(BASE_DIR), "yuketang-main")
+
+# ---- 浏览器存活看门狗 ----
+# 超过该秒数未收到任何请求（页面每 3s 发一次 /beacon）→ 自动关停释放端口
+BROWSER_WATCHDOG_SECONDS = 15

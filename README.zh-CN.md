@@ -31,7 +31,13 @@
 ## 🚀 快速开始
 
 ### 方式一：下载 EXE（Windows）
-前往 [Releases](../../releases) 页面下载最新附件 `StudyWorkbench-v1.2-windows-x64.exe`，双击即可运行。
+前往 [Releases](../../releases) 页面下载最新附件 `StudyWorkbench.v1.2.1.exe`，双击即可运行。
+
+> **⚠️ Windows 使用提示**
+> - **先选好可写目录**：把 exe 移动到独立文件夹（如 `D:\StudyWorkbench\`）再运行——导入的题库存放在同目录的 `question_banks\`，放在 `C:\Program Files\` 或直接在压缩包里运行可能创建失败。
+> - **SmartScreen 警告**：exe 未做代码签名，首次运行请点「更多信息 → 仍要运行」。
+> - **进度保存在浏览器里**（localStorage，按 localhost:8000 来源隔离）：更换浏览器、或端口被占自动跳到 8001 时，将看不到原进度（数据并未丢失）。
+> - **自动退出机制**：关闭所有页面约 15 秒后，后台服务会自动退出并释放端口；期间重新打开页面会自动续命。
 
 ### 方式二：Python 源码运行
 ```bash
