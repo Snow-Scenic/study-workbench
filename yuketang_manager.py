@@ -33,13 +33,21 @@ class YukeJobManager:
 
     def analyze(self, params):
         clean = validate_params(params)          # YukeParamError -> HTTP 400
+        core = self._build_core(clean)           # 初始化失败 -> YukeParamError 400
         with self._lock:
             self._require_state(not_in=_BUSY_STATES,
                                 msg=f"已有任务进行中（{self._state()}），不可重复分析")
-        return self._begin_analyze(clean, self._make_core)
+        return self._begin_analyze(clean, core)
+
+    def _build_core(self, params):
+        """构造核心实例。工厂签名兼容零参注入（测试桩）与参数感知（真实核心）。"""
+        try:
+            return self._make_core(params)
+        except TypeError:
+            return self._make_core()
 
     def start(self):
-        core = self._make_core()
+        core = getattr(self, "_core", None) or self._build_core({})
         with self._lock:
             self._require_state(in_=("ready",), msg="只有 ready 状态可以开始执行")
             job = self._job
@@ -64,6 +72,7 @@ class YukeJobManager:
                 raise YukeStateError("当前没有可重置的任务（idle）")
             self._require_state(in_=_TERMINAL_RESETTABLE,
                                 msg="执行进行中不允许重置，请先停止")
+            # 重置 = 完全清零（含日志），回到干净的参数填写态
             self._job = None
             self._stop_event = None
             self._thread = None
@@ -101,11 +110,12 @@ class YukeJobManager:
 
     # ---------- 内部：状态机与后台线程 ----------
 
-    def _begin_analyze(self, clean_params, core_factory):
+    def _begin_analyze(self, clean_params, core):
         with self._lock:
             self._require_state(not_in=_BUSY_STATES,
                                 msg=f"已有任务进行中（{self._state()}）")
             self._stop_event = threading.Event()
+            self._core = core                    # 跨阶段复用同一实例（真实核心持有会话）
             self._job = {
                 "state": "analyzing",
                 "params": dict(clean_params),
@@ -119,7 +129,7 @@ class YukeJobManager:
                 "ended_at": None,
             }
             self._thread = threading.Thread(
-                target=self._run_analyze, args=(core_factory(),), daemon=True)
+                target=self._run_analyze, args=(core,), daemon=True)
             self._thread.start()
         return {"ok": True, "state": "analyzing"}
 

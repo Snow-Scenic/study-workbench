@@ -300,12 +300,13 @@ def test_section_tab_animation_scoped_to_intro(base_url):
 
 
 def test_yuketang_idle_has_side_panel_and_css_remap(base_url):
-    """雨课堂 idle 态应有操作指引/状态图例侧栏；令牌应重映射为科技蓝；动作容器必须存在"""
+    """雨课堂 idle 态：获取配置参数+工作原理侧栏存在；动作容器必须存在"""
     status, body = get_status(base_url + "/yuketang")
     assert status == 200
     html = body.decode("utf-8")
-    assert 'class="yk-side"' in html and "状态图例" in html
-    assert 'id="execActions"' in html   # 缺失曾导致控制台按钮永远渲染不出（JS 抛错）
+    assert 'class="yk-side"' in html and "获取配置参数" in html and "工作原理" in html
+    assert "状态图例" not in html            # 图例与顶栏胶囊重复，已删除
+    assert 'id="execActions"' in html        # 缺失曾导致控制台按钮永远渲染不出（JS 抛错）
     status, body = get_status(base_url + "/static/css/yuketang.css")
     css = body.decode("utf-8")
     assert "--primary: #4cc3ff" in css and "--bg: #0a0e15" in css

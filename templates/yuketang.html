@@ -5,9 +5,9 @@
 <!-- 刷课（雨课堂控制台）模块基于 https://github.com/Gary-666/yuketang 修改集成，
      当前为离线演示模式（Mock），真实执行暂只支持长江雨课堂。 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>雨课堂刷课控制台 · DEMO</title>
-<link rel="stylesheet" href="/static/css/base.css">
-<link rel="stylesheet" href="/static/css/yuketang.css">
+<title>雨课堂刷课控制台</title>
+<link rel="stylesheet" href="/static/css/base.css?v=1.2">
+<link rel="stylesheet" href="/static/css/yuketang.css?v=1.2">
 </head>
 <body data-view="idle">
 <div class="yk-app">
@@ -28,8 +28,7 @@
       <span class="chip bad"><b id="stFailed">0</b><i>失败</i></span>
     </div>
     <div class="hud-right">
-      <span class="mock-badge" id="mockBadge">演示模式 · 离线模拟 · 不访问网络</span>
-      <button class="btn btn-outline btn-sm" id="btnSettings" onclick="toggleSettings()">⚙ 参数回看</button>
+      <span class="mock-badge" id="mockBadge">长江雨课堂 · changjiang.yuketang.cn</span>
     </div>
   </header>
 
@@ -37,7 +36,7 @@
   <section class="yk-config" id="configPanel">
     <div class="cfg-card">
       <h2>课程接入参数</h2>
-      <p class="muted">参数仅保存在本机内存与浏览器（认证字段不落盘），第一阶段为离线模拟。</p>
+      <p class="muted">真实模式将连接长江雨课堂执行；认证字段仅存内存，不落盘。填入「演示参数」可离线体验全流程。</p>
       <div class="cfg-grid cfg-auth">
         <label>课堂 ID<input id="f_classroom_id" placeholder="如 12345678"></label>
         <label>签名 SIGN<input id="f_sign" placeholder="URL 中的 sign 参数"></label>
@@ -68,28 +67,28 @@
       <p class="err" id="cfgError"></p>
     </div>
 
-    <!-- 侧栏：流程说明 + 状态图例（填充 idle 态留白） -->
+    <!-- 侧栏：获取配置参数 + 工作原理（文案对齐上游 yuketang 文档，紧凑单屏版） -->
     <aside class="yk-side">
       <div class="side-card">
-        <h4>◈ 操作指引</h4>
+        <h4>获取配置参数</h4>
         <ol class="side-steps">
-          <li><b>填写接入参数</b><span>课堂 ID / sign / Cookie 等仅保存在本机内存与浏览器</span></li>
-          <li><b>分析课程结构</b><span>扫描课程，生成任务时间线</span></li>
-          <li><b>开始执行</b><span>多线程执行任务，可随时停止；结束后点「重新配置」换下一门课</span></li>
+          <li><b>① 课堂参数</b><span>课程页 URL 中提取：<br><code class="g-code">classroom_id = 12345678</code><code class="g-code">sign = your_sign</code></span></li>
+          <li><b>② Cookie 参数</b><span>F12 → Application → Cookies：<br><code class="g-code">csrftoken / sessionid / uv_id</code></span></li>
         </ol>
+        <p class="g-tip">uv_id 即「学校 ID」；三个值分别填入左侧对应输入框</p>
       </div>
       <div class="side-card">
-        <h4>◈ 状态图例</h4>
-        <ul class="side-legend">
-          <li><i class="lg-dot d-running"></i>执行中</li>
-          <li><i class="lg-dot d-done"></i>已完成</li>
-          <li><i class="lg-dot d-skip"></i>已跳过</li>
-          <li><i class="lg-dot d-stop"></i>已停止</li>
-          <li><i class="lg-dot d-fail"></i>失败</li>
+        <h4>工作原理</h4>
+        <ul class="g-flow">
+          <li><b>课程分析</b>遍历章节，识别视频与图文</li>
+          <li><b>任务筛选</b>提取未完成的 leaf 节点</li>
+          <li><b>视频模拟</b>播放事件序列＋定时心跳</li>
+          <li><b>图文打卡</b>阅读停留后确认已读</li>
+          <li><b>进度同步</b>实时状态、断点续看</li>
         </ul>
       </div>
       <div class="side-card demo-note">
-        演示模式——全流程离线模拟，不产生任何真实网络请求；认证参数不会写入磁盘。
+        双模式：演示参数＝离线体验；真实参数＝连接长江雨课堂。
       </div>
     </aside>
   </section>
@@ -124,18 +123,17 @@
     </section>
   </main>
 
-  <!-- ===== 设置抽屉（非 idle 态查看掩码参数）===== -->
-  <aside class="settings-drawer panel" id="settingsDrawer" hidden>
-    <h4>本次会话参数（敏感字段已脱敏） <a href="javascript:void(0)" onclick="toggleSettings()" style="float:right">✕</a></h4>
-    <pre id="settingsBody" class="mono"></pre>
-  </aside>
-
-  <!-- ===== 底部日志抽屉 ===== -->
+  <!-- ===== 底部：迷你终端（实时日志，最新最深、越旧越淡）===== -->
   <footer class="yk-logs">
-    <button class="logs-toggle" id="logsToggle" onclick="toggleLogs()">▾ 系统日志（<span id="logCount">0</span> 条）</button>
-    <pre id="logBox" hidden class="mono"></pre>
+    <div class="term">
+      <div class="term-head">
+        <span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span>
+        <b>系统日志</b><i id="logCount">0 条</i>
+      </div>
+      <pre class="term-body mono" id="logTail"></pre>
+    </div>
   </footer>
 </div>
-<script src="/static/js/yuketang.js"></script>
+<script src="/static/js/yuketang.js?v=1.2"></script>
 </body>
 </html>

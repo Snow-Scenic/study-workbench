@@ -17,5 +17,8 @@ INTERNAL_BANKS_DIR = os.path.join(RESOURCE_DIR, "question_banks")
 PORT = 8000
 
 # ---- 雨课堂控制台 ----
-CORE_IMPL = "mock"   # Demo Mode：'mock'=离线演示 | 'real'=真实核心（第二阶段 M6；禁止按 Cookie 自动切换）
+# 'auto' = 智能路由：classroom_id 命中演示哨兵（demo*/111/test/000）→ 离线演示，
+#          否则走真实核心（长江雨课堂）
+# 'mock' / 'real' = 强制指定
+CORE_IMPL = "auto"
 YUKETANG_SRC_DIR = os.path.join(os.path.dirname(BASE_DIR), "yuketang-main")
