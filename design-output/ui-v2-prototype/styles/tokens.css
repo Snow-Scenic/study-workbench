@@ -1,0 +1,87 @@
+:root {
+  /* Color - semantic tokens */
+  --color-bg: #F6F5F1;
+  --color-surface: #FCFBF8;
+  --color-surface-elevated: #FFFFFF;
+  --color-surface-hover: #F2F1EB;
+  --color-text: #1E1E1B;
+  --color-text-secondary: #6F6D68;
+  --color-text-tertiary: #9A978D;
+  --color-border: #E2E0DA;
+  --color-border-strong: #D2D0CA;
+  --color-accent: #B94A34;
+  --color-accent-hover: #A13F2A;
+  --color-accent-subtle: rgba(185, 74, 52, 0.10);
+  --color-success: #3B7A5A;
+  --color-warning: #B08A2E;
+  --color-danger: #A03D2E;
+  --color-focus: rgba(185, 74, 52, 0.22);
+
+  /* Sizing - shell */
+  --sidebar-expanded: 224px;
+  --sidebar-collapsed: 56px;
+  --topbar-height: 52px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-control: 6px;
+  --radius-surface: 8px;
+  --radius-overlay: 12px;
+
+  /* Spacing - 4px base */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-normal: 180ms;
+  --duration-slow: 260ms;
+
+  /* Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-base: 14px;
+  --font-size-lg: 15px;
+  --font-size-xl: 16px;
+  --font-size-2xl: 18px;
+  --font-size-3xl: 20px;
+  --font-size-4xl: 24px;
+}
+
+[data-theme="dark"] {
+  --color-bg: #10110F;
+  --color-surface: #171815;
+  --color-surface-elevated: #1D1E1A;
+  --color-surface-hover: #242520;
+  --color-text: #F2F0EA;
+  --color-text-secondary: #A09D95;
+  --color-text-tertiary: #7A766D;
+  --color-border: #2B2C27;
+  --color-border-strong: #3A3A36;
+  --color-accent: #D86040; /* slightly brighter for dark visibility */
+  --color-accent-hover: #C65030;
+  --color-accent-subtle: rgba(216, 96, 64, 0.14);
+  --color-success: #4AA57F;
+  --color-warning: #D9952A;
+  --color-danger: #C85A3A;
+  --color-focus: rgba(216, 96, 64, 0.28);
+}
+
+/* Accessibility: reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

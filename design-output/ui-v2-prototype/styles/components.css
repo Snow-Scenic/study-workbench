@@ -1,0 +1,175 @@
+/* Component contracts for Phase 1 prototype */
+/* Sections 21B, 21C, 21D, 21E, 21F, 21G implemented */
+
+/* Button variants — Section 21C */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px; /* Standard */
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control); /* 6px — restrained */
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+  text-decoration: none;
+  line-height: 1.25;
+  /* No gradient. No pill radius. */
+}
+
+.btn-compact {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+.btn-prominent {
+  height: 40px; /* Section 4B max */
+  padding: 0 22px;
+  font-size: var(--font-size-base);
+}
+
+/* Primary — reserved for strongest action */
+.btn-primary {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.btn-primary:active {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Secondary */
+.btn-secondary {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-secondary);
+}
+
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Ghost */
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: transparent;
+}
+
+.btn-ghost:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}
+
+/* Danger — destructive only */
+.btn-danger {
+  background: var(--color-danger);
+  color: #fff;
+  border-color: var(--color-danger);
+}
+
+.btn-danger:hover {
+  background: #8B3028;
+  border-color: #8B3028;
+}
+
+/* Disabled — readable (>3:1) */
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  /* Readable: text remains visible; contrast preserved via opacity only to readable level */
+}
+
+/* Loading — preserve width; prevent duplicate */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-loading .btn-label {
+  opacity: 0.7;
+}
+
+/* IconButton — Section 21D */
+.icon-btn {
+  width: 32px; /* Section 4B */
+  height: 32px; /* Section 4B */
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, border-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.icon-btn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-secondary);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Badge — small pill only when appropriate */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px; /* Section 9: ONLY badges use 999px */
+  font-size: 11px; /* Section 6 */
+  font-weight: 600;
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Progress — thin line; solid subtle fill; no gradient */
+.progress-track {
+  width: 100%;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--color-accent);
+  border-radius: inherit;
+  transition: width var(--duration-slow) ease;
+}
