@@ -1,0 +1,10 @@
+<!-- Study / Book / Chart / Settings / Arrow / Close / Check -->
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="书本"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M4 6h8M4 9h8M4 12h5"/></svg>
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="练习"><path d="M2 10l4-6 4 6"/><circle cx="10" cy="6" r="1.5"/></svg>
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="错题"><path d="M4 3l3 3 3-3"/><path d="M4 13l3-3 3 3"/></svg>
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="统计"><path d="M3 13v-4h3v4"/><path d="M8 13v-7h3v7"/><path d="M13 13v-3h3v3"/></svg>
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="控制台"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M6 7h4M6 10h2"/></svg>
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="设置"><circle cx="8" cy="8" r="5"/><path d="M8 4v2m0 4v2m-4-4h4m2 0h0"/></svg>
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="箭头"><path d="M6 3l4 5-4 5"/></svg>
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="关闭"><path d="M3 3l10 10M13 3L3 13"/></svg>
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="确认"><path d="M3 8l3 3 7-7"/></svg>
