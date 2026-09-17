@@ -2,6 +2,18 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.venv/
+venv/
+
+# 本地凭据与环境配置（示例模板可入库）
+.env
+.env.*
+!.env.example
+
+# 本地诊断与临时开发产物
+design-output/
+.coverage
+htmlcov/
 
 # 打包产物（可由 build.bat 重新生成）
 build/

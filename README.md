@@ -50,6 +50,8 @@ python main.py      # 浏览器模式，需 Python 3.11+
 
 启动后浏览器自动打开 `http://localhost:8000`（端口占用时自动尝试 8001~8009）。如需从源码启动原生桌面窗口，可双击“启动学习工作台(无黑框).vbs”，或运行 `run_desktop.bat`。
 
+桌面启动器统一按以下顺序选择 Python：`STUDY_WORKBENCH_PYTHON` 环境变量 → `desktop-python.txt` 第一行 → `.venv\Scripts\python.exe` → PATH。请确保选中的解释器安装了 `requirements.txt` 中的依赖；`desktop-python.txt` 填完整路径、不带引号，仅保留本机。可运行 `run_desktop.bat --check` 检查解释器与依赖（不启动窗口）。
+
 ### 导入题库
 > 仓库与程序默认**不带任何题库**，请使用自己的 JSON 题库文件。
 
@@ -183,7 +185,7 @@ build.bat
 
 ## 📜 版本
 
-查看 [CHANGELOG.md](CHANGELOG.md)。下一版本为 **v1.3.0**，用于发布无控制台桌面版。
+当前源码版本为 **v1.3.0**，包含无控制台桌面入口。变更见 [CHANGELOG.md](CHANGELOG.md)；源码上传范围与 EXE 构建、验收步骤见 [发布清单](docs/RELEASE.md)。
 
 ## 📄 许可证
 
