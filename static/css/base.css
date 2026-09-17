@@ -1,44 +1,103 @@
 /* ============================================================
-   base.css — 设计令牌（颜色/圆角/阴影变量）、全局 reset、
-   公共动画关键帧、打印样式。主题切换只改这里的变量。
-   主题：浅色「宣纸」/ 深色「墨夜」— 新中式墨韵
+   base.css — 2026 现代设计系统令牌体系 (Tokens & Foundations)
+   核心哲学：Quiet by default. Expressive on interaction.
+   Surface Tone 层级替代生硬边框，语义化圆角，Sans + Mono 混排
    ============================================================ */
 
 :root {
-    /* 宣纸底 + 墨字 + 朱砂 + 鎏金 */
-    --bg: linear-gradient(165deg, #faf7f0 0%, #f0eadd 55%, #e9e2d2 100%);
-    --card-bg: rgba(253, 251, 246, 0.92);
-    --text: #2a2620;
-    --text-light: #7d7566;
-    --primary: #a8382b;
-    --primary-light: #c9563f;
-    --primary-gradient: linear-gradient(135deg, #932f24 0%, #bf4b35 100%);
-    --gold: #a8863c;
-    --gold-light: #c9a961;
-    --success: #2e7d5b;
-    --success-light: #58b98f;
-    --danger: #b3402e;
-    --danger-light: #d4553f;
-    --border: rgba(42, 38, 32, 0.12);
-    --shadow: 0 1px 2px rgba(74, 62, 40, 0.05), 0 10px 30px rgba(74, 62, 40, 0.12);
-    --shadow-sm: 0 1px 2px rgba(74, 62, 40, 0.05), 0 2px 10px rgba(74, 62, 40, 0.08);
-    --radius: 14px;
-    --radius-sm: 10px;
-    --radius-lg: 20px;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', serif;
-    --transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-    --transition-slow: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    /* ---- WinUI 3 Surface Tone 阶梯（Windows 11 计算器同款 Mica Alt 材质）---- */
+    --bg-app: #F3F3F3;             /* Mica Alt 背景：与 Win11 计算器和设置 100% 同色温 */
+    --surface-secondary: #F8F9FA;  /* 侧栏背景：高雅微白透亮，层次纯粹 */
+    --surface-main: #FFFFFF;       /* 卡片主层：纯白浮雕，自带 WinUI 物理微阴影 */
+    --surface-hover: #EAEAEA;      /* 悬浮浅层 */
+    --surface-active: #E0E0E0;     /* 按压层 */
+    --surface-elevated: #FFFFFF;    /* 浮动层/弹窗 */
 
-    /* 字号令牌 */
+    /* ---- 文本阶层 ---- */
+    --text-primary: #1A1A1A;       /* Win11 主文字：黑灰温润 */
+    --text-secondary: #5C5C5C;     /* 辅助说明 */
+    --text-tertiary: #8C8C8C;      /* 静默标注 */
+
+    /* ---- 微边框 / 物理下边框 ---- */
+    --hairline: rgba(0, 0, 0, 0.06);
+    --hairline-strong: rgba(0, 0, 0, 0.12);
+    --border-elevation-bottom: rgba(0, 0, 0, 0.14); /* 计算器同款 1px 物理下边框 */
+
+    /* ---- 品牌与功能色（Windows 11 官方电光蓝）---- */
+    --accent: #0067C0;             /* Windows 11 Signature Blue */
+    --accent-hover: #005FB8;
+    --accent-subtle: rgba(0, 103, 192, 0.08);
+    --accent-glow: rgba(0, 103, 192, 0.22);
+    --success: #107C41;            /* WinUI 绿色 */
+    --success-subtle: rgba(16, 124, 65, 0.10);
+    --warning: #9D5D00;            /* WinUI 琥珀色 */
+    --warning-subtle: rgba(157, 93, 0, 0.10);
+    --danger: #C42B1C;             /* WinUI 红色 */
+    --danger-subtle: rgba(196, 43, 28, 0.10);
+
+    /* ---- 语义化圆角（Salesforce Cosmos 体系）---- */
+    --radius-xs: 4px;              /* 标签 / 细小指示器 */
+    --radius-sm: 6px;              /* 次级控件 / 小徽章 */
+    --radius-md: 8px;              /* 按钮 / 输入框 / 选项 */
+    --radius-lg: 12px;             /* 主卡片 / 面板 */
+    --radius-xl: 16px;             /* 模态对话框 */
+    --radius-pill: 999px;          /* 悬浮工具栏 / 纯胶囊 */
+
+    /* ---- 字体排版栈（Sans + Mono 混排，Win11 首选 Segoe UI Variable）---- */
+    --font-sans: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --font-mono: "Cascadia Code", "Geist Mono", "SF Mono", "JetBrains Mono", Consolas, "Courier New", monospace;
+
+    /* ---- 现代交互与流体动效系统 (Windows Interaction & Motion System Tokens) ---- */
+    --duration-micro: 110ms;       /* 80-120ms: hover, active, pressed, icon toggle */
+    --duration-comp: 220ms;        /* 180-240ms: popup, tooltip, tab indicator, badges */
+    --duration-layout: 340ms;      /* 300-360ms: sidebar collapse/reflow, card morph */
+    --duration-nav: 300ms;         /* 280-340ms: drill-in, forward connected animation */
+    --duration-back: 180ms;        /* 160-200ms: direct back deceleration (faster than forward) */
+
+    --duration-spring: 360ms;      /* 物理回弹持续时间（由280ms调优至360ms，舒适不急促） */
+    --ease-enter: cubic-bezier(0.1, 0.9, 0.2, 1);    /* 到达/泊停: 快启动，微惯性泊停 */
+    --ease-exit: cubic-bezier(0.7, 0, 0.84, 0);       /* 离开: 开始稳，加速退出 */
+    --ease-move: cubic-bezier(0.2, 0, 0, 1);          /* 布局重排/连续变宽 */
+    --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);  /* 物理微弹性手感 */
+    --ease-spring-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 超越回弹手感 */
+    --ease-spring-soft: cubic-bezier(0.34, 1.25, 0.64, 1); /* 柔和回弹手感 */
+    --ease-back: cubic-bezier(0.25, 1, 0.5, 1);       /* 快速返回直达减速 */
+
+    --duration-fast: var(--duration-micro);
+    --duration-normal: var(--duration-comp);
+    --duration-slow: var(--duration-layout);
+    --ease-standard: var(--ease-move);
+    --ease-out: var(--ease-enter);
+
+    /* ---- 阴影与景深（环境微漫射 + 柔和贴合，杜绝生硬方框与单向下坠切角）---- */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    --shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+    --shadow-hover: 0 6px 16px -3px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.03);
+    --shadow-modal: 0 20px 48px -8px rgba(0, 0, 0, 0.18), 0 0 0 1px var(--hairline);
+
+    /* ---- 兼容别名（保障历史类名平滑无缝）---- */
+    --bg: var(--bg-app);
+    --card-bg: var(--surface-main);
+    --text: var(--text-primary);
+    --text-light: var(--text-secondary);
+    --primary: var(--accent);
+    --primary-light: var(--accent-hover);
+    --primary-gradient: var(--accent);
+    --border: var(--hairline);
+    --radius: var(--radius-lg);
+    --font: var(--font-sans);
+    --font-serif: var(--font-sans);
+    --transition: all var(--duration-fast) var(--ease-out);
+    --transition-slow: all var(--duration-slow) var(--ease-standard);
+
+    /* 字号与间距 */
     --fs-xs: 0.75rem;
     --fs-sm: 0.82rem;
     --fs-md: 0.9rem;
     --fs-base: 1rem;
-    --fs-lg: 1.15rem;
-    --fs-xl: 1.4rem;
+    --fs-lg: 1.125rem;
+    --fs-xl: 1.35rem;
 
-    /* 间距令牌 */
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -46,112 +105,275 @@
     --space-5: 24px;
     --space-6: 32px;
 
-    /* RGB 三元组（供 rgba(var(--xx), a) 使用） */
-    --pr: 168, 56, 43;   /* 朱砂 primary */
-    --gd: 168, 134, 60;  /* 鎏金 gold */
-    --sc: 46, 125, 91;   /* 玉绿 success */
-    --dg: 179, 64, 46;   /* 赭红 danger */
+    --chip-bg: rgba(0, 0, 0, 0.04);
+    --chip-border: rgba(0, 0, 0, 0.08);
+    --surface-input: #FFFFFF;
+    --surface-input-border: rgba(0, 0, 0, 0.12);
+    --surface-terminal: #F8F9FA;
+
+    --pr: 59, 102, 245;
+    --sc: 16, 185, 129;
+    --gd: 245, 158, 11;
+    --dg: 239, 68, 68;
 }
 
 [data-theme="dark"] {
-    /* 夜墨：深蓝灰基底，月白文字，朱砂提亮 */
-    --bg: linear-gradient(170deg, #15171c 0%, #1b2028 60%, #161a21 100%);
-    --card-bg: rgba(27, 31, 39, 0.92);
-    --text: #eae7df;
-    --text-light: #9d978a;
-    --primary: #d95b45;
-    --primary-light: #e8795f;
-    --primary-gradient: linear-gradient(135deg, #ad3d2c 0%, #cf5a42 100%);
-    --gold: #cfa85c;
-    --gold-light: #e0c184;
-    --success: #4aa57f;
-    --success-light: #6fc4a0;
-    --danger: #d0553f;
-    --danger-light: #e0745d;
-    --border: rgba(234, 231, 224, 0.10);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 10px 30px rgba(0, 0, 0, 0.38);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25), 0 2px 10px rgba(0, 0, 0, 0.30);
-    --pr: 217, 91, 69;
-    --gd: 207, 168, 92;
-    --sc: 74, 165, 127;
-    --dg: 208, 85, 63;
+    /* ---- WinUI 3 暗色 Surface Tone 阶梯（Windows 11 Mica Alt Dark）---- */
+    --bg-app: #202020;             /* Mica Alt Dark 底色 */
+    --surface-secondary: #1C1C1C;  /* 侧栏 */
+    --surface-main: #2B2B2B;       /* 主卡片层 */
+    --surface-hover: #333333;      /* 悬浮层 */
+    --surface-active: #383838;     /* 按压层 */
+    --surface-elevated: #2D2D2D;    /* 浮动层/弹窗 */
+
+    /* ---- 文本阶层 (WCAG AA 高对比度亮白/亮板岩) ---- */
+    --text-primary: #FFFFFF;
+    --text-secondary: #CBD5E1;
+    --text-tertiary: #94A3B8;
+
+    /* ---- 微边框 / 发丝线 ---- */
+    --hairline: rgba(255, 255, 255, 0.08);
+    --hairline-strong: rgba(255, 255, 255, 0.14);
+    --border-elevation-bottom: rgba(0, 0, 0, 0.35);
+
+    /* ---- 品牌与功能色（WinUI 3 亮电光蓝）---- */
+    --accent: #4CC2FF;
+    --accent-hover: #60CDFF;
+    --accent-subtle: rgba(76, 194, 255, 0.12);
+    --accent-glow: rgba(76, 194, 255, 0.28);
+    --success: #6CCB5F;
+    --success-subtle: rgba(108, 203, 95, 0.12);
+    --warning: #FCE100;
+    --warning-subtle: rgba(252, 225, 0, 0.12);
+    --danger: #FF99A4;
+    --danger-subtle: rgba(255, 153, 164, 0.12);
+
+    --chip-bg: rgba(255, 255, 255, 0.08);
+    --chip-border: rgba(255, 255, 255, 0.12);
+    --surface-input: #242424;
+    --surface-input-border: rgba(255, 255, 255, 0.14);
+    --surface-terminal: #161616;
+
+    /* 阴影与景深（深色环境漫反射，圆角柔和贴合） */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.20);
+    --shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.30);
+    --shadow-hover: 0 6px 18px -3px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.35);
+    --shadow-modal: 0 20px 48px -8px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--hairline);
+
+    --pr: 76, 194, 255;
+    --sc: 108, 203, 95;
+    --gd: 252, 225, 0;
+    --dg: 255, 153, 164;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-::selection { background: rgba(201, 169, 97, 0.45); color: inherit; }
+::selection {
+    background: var(--accent-subtle);
+    color: var(--accent);
+}
 
-[data-theme="dark"] ::selection { background: rgba(207, 168, 92, 0.35); color: #fff; }
+[data-theme="dark"] ::selection {
+    background: var(--accent-subtle);
+    color: #FFFFFF;
+}
 
-/* 键盘可达性：统一的焦点环 */
+/* 统一焦点环 */
 :focus-visible {
-    outline: 3px solid var(--primary-light);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* 精致细滚动条 */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb {
+    background: var(--hairline-strong);
     border-radius: 4px;
 }
-
-/* 细滚动条（侧边栏 / 弹窗 / 标签页区域） */
-.sidebar::-webkit-scrollbar,
-.modal-body::-webkit-scrollbar,
-.section-tabs::-webkit-scrollbar { width: 6px; height: 6px; }
-.sidebar::-webkit-scrollbar-thumb,
-.modal-body::-webkit-scrollbar-thumb,
-.section-tabs::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.35);
-    border-radius: 3px;
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
 }
-.sidebar::-webkit-scrollbar-thumb:hover,
-.modal-body::-webkit-scrollbar-thumb:hover,
-.section-tabs::-webkit-scrollbar-thumb:hover { background: rgba(128, 128, 128, 0.55); }
-.sidebar::-webkit-scrollbar-track,
-.modal-body::-webkit-scrollbar-track,
-.section-tabs::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-track { background: transparent; }
 
 body {
-    font-family: var(--font); background: var(--bg); background-attachment: fixed;
-    color: var(--text); min-height: 100vh; line-height: 1.6;
-    padding-bottom: 80px; position: relative;
+    font-family: var(--font-sans);
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.6;
+    padding-bottom: 80px;
+    position: relative;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
-body::before {
-    content: ''; position: fixed; inset: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%238a7a5c' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    opacity: 0.5; z-index: -1; pointer-events: none;
+
+.container {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 16px 20px 100px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
 }
-[data-theme="dark"] body::before { opacity: 0.25; }
 
-.container { max-width: 760px; margin: 0 auto; padding: 16px 18px; animation: fadeInUp 0.6s ease; position: relative; }
+#questionsContainer {
+    flex: 1;
+    max-width: 740px;
+    min-width: 0;
+    width: 100%;
+}
 
-/* ===== 公共动画关键帧（全站唯一来源）===== */
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+/* 矢量图标基础类 */
+.ui-icon {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+    stroke: currentColor;
+}
+
+/* 数字/代码/快捷键 Mono 等宽类 */
+.mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===== 核心微动画（克制物理动效，弹性回弹与阶梯渐变）===== */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-@keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes scaleIn { from { transform: scale(0.9); } to { transform: scale(1); } }
-@keyframes cardEnter { from { opacity: 0; transform: translateY(30px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes cardNext { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
-@keyframes cardPrev { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
-@keyframes buttonPress { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
-@keyframes feedbackSlide { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes modalSlideUp { from { opacity: 0; transform: translateY(50px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes countUp { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
-@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-@keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes modalSlideUp { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes cardNext {
+    0% { opacity: 0; transform: translateX(26px) scale(0.988); }
+    65% { opacity: 1; transform: translateX(-3px) scale(1.002); }
+    100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes cardPrev {
+    0% { opacity: 0; transform: translateX(-26px) scale(0.988); }
+    65% { opacity: 1; transform: translateX(3px) scale(1.002); }
+    100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes cardSpringEnter {
+    0% { opacity: 0; transform: translateY(14px) scale(0.985); }
+    65% { opacity: 1; transform: translateY(-3px) scale(1.003); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes optionStaggerIn {
+    0% { opacity: 0; transform: translateY(10px) scale(0.985); }
+    70% { opacity: 1; transform: translateY(-2px) scale(1.003); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes feedbackSlide { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes popIn { from { opacity: 0; transform: scale(0.92); } 60% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
 
-.animate-pulse { animation: pulse 2s ease-in-out infinite; }
-.animate-bounce { animation: bounce 1s ease-in-out infinite; }
-.animate-float { animation: float 3s ease-in-out infinite; }
-.animate-shimmer {
-    background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
-    background-size: 1000px 100%;
-    animation: shimmer 3s infinite;
+/* ===== 原生 View Transition 浅色/深色从上至下渐变帷幕切换 ===== */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+    z-index: 1;
+}
+::view-transition-new(root) {
+    z-index: 99999;
+    animation: themeCurtainDrop 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes themeCurtainDrop {
+    0% {
+        clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+    }
+    100% {
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    }
+}
+
+/* 全局色彩平滑流变（页面与组件在浅色/深色切换时的连续渐变过渡） */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+    transition: background-color 450ms cubic-bezier(0.25, 1, 0.5, 1) !important,
+                color 400ms cubic-bezier(0.25, 1, 0.5, 1) !important,
+                border-color 450ms cubic-bezier(0.25, 1, 0.5, 1) !important,
+                box-shadow 450ms cubic-bezier(0.25, 1, 0.5, 1) !important,
+                fill 400ms cubic-bezier(0.25, 1, 0.5, 1) !important,
+                stroke 400ms cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+/* 顶部流光扫描波（从上至下冲刷渐变） */
+.theme-curtain-wave {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: -120px;
+    height: 120px;
+    pointer-events: none;
+    z-index: 100000;
+    background: linear-gradient(to bottom, transparent 0%, rgba(76, 194, 255, 0.18) 40%, rgba(76, 194, 255, 0.42) 80%, transparent 100%);
+    opacity: 0;
+    filter: blur(6px);
+}
+.theme-curtain-wave.animating {
+    animation: curtainWaveDrop 560ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes curtainWaveDrop {
+    0% {
+        top: -120px;
+        opacity: 0.9;
+    }
+    80% {
+        opacity: 0.75;
+    }
+    100% {
+        top: calc(100vh + 60px);
+        opacity: 0;
+    }
+}
+
+/* 减弱动画设置 */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 @media print {
     .bottom-bar, .header, .section-tabs, .stats-bar, .sidebar, .modal-overlay,
+    .progress-dialog-overlay,
     .top-zone .tabs-drawer, #notePanel { display: none !important; }
     .question-card { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
     body { padding-bottom: 0; }
 }
+
+/* ============================================================
+   桌面模式 (Desktop Mode) — pywebview 原生窗口增强
+   通过 JS 注入 body.desktop-mode 激活
+   ============================================================ */
+.desktop-mode {
+    /* 禁止文本选择（原生应用行为，特定元素通过 user-select: text 恢复） */
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* 答题区/输入框/日志等内容区域恢复文本选择 */
+.desktop-mode .question-card,
+.desktop-mode .term-body,
+.desktop-mode input,
+.desktop-mode textarea,
+.desktop-mode pre,
+.desktop-mode code,
+.desktop-mode [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* 桌面模式下隐藏浏览器相关提示 */
+.desktop-mode .browser-only {
+    display: none !important;
+}
+

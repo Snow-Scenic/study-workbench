@@ -1,33 +1,110 @@
-/* hub.css — 学习工作台专属样式 */
+/* hub.css — 学习工作台门户样式 (2026 Modern Minimalist) */
 .hub-wrap {
-    min-height: 100vh; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 34px;
-    background: var(--bg); padding: 40px 24px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    background: var(--bg-app);
+    padding: 40px 24px;
 }
-.hub-head { display: flex; align-items: center; gap: 16px; text-align: left; }
-.hub-head .seal { width: 52px; height: 52px; font-size: 1.6rem; border-radius: 12px; }
-.hub-head h1 {
-    font-family: var(--font-serif); font-size: 1.7rem; font-weight: 700;
-    letter-spacing: 2px; margin-bottom: 2px;
-}
-.hub-head .muted { margin: 0; font-size: 0.88rem; }
 
-.hub-cards { display: flex; gap: 26px; }
+.hub-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+}
+
+.hub-head .seal {
+    width: 36px;
+    height: 36px;
+    font-size: 1.15rem;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: #FFFFFF;
+}
+
+.hub-head h1 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 2px;
+    color: var(--text-primary);
+}
+
+.hub-head .muted {
+    margin: 0;
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+}
+
+.hub-cards {
+    display: flex;
+    gap: 20px;
+}
+
 .hub-card {
-    display: flex; flex-direction: column; align-items: center; gap: 10px;
-    width: 210px; padding: 30px 20px 24px;
-    background: var(--card-bg); border: 2px solid var(--border);
-    border-radius: var(--radius); box-shadow: var(--shadow);
-    text-decoration: none; color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 220px;
+    padding: 28px 20px 22px;
+    background: var(--surface-main);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: background-color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.hub-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--text-tertiary);
+    background-color: var(--surface-hover);
+    box-shadow: var(--shadow-hover);
+}
+
+.hc-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--surface-secondary);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: var(--transition);
 }
-.hub-card:hover {
-    transform: translateY(-4px); border-color: var(--primary);
-    box-shadow: 0 10px 28px rgba(var(--pr), 0.2);
-}
-.hc-icon { font-size: 2.6rem; line-height: 1; }
-.hc-name { font-size: 1.15rem; font-weight: 700; letter-spacing: 1px; }
-.hc-desc { font-size: 0.82rem; color: var(--text-light); }
 
-.hub-foot { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
-.foot-sep { color: var(--border); }
+.hub-card:hover .hc-icon {
+    background: var(--accent-subtle);
+}
+
+.hc-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.hc-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.hub-foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.82rem;
+}
+
+.foot-sep {
+    color: var(--hairline-strong);
+}

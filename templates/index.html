@@ -3,16 +3,583 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>题库练习 · Study Quiz</title>
+    <title>学习工作台 · Study Workbench</title>
     <link rel="icon" href="/favicon.ico">
-    <!-- 样式：base(变量/动画) → components(组件) → pages(页面布局) -->
-    <link rel="stylesheet" href="/static/css/base.css?v=1.2">
-    <link rel="stylesheet" href="/static/css/components.css?v=1.2">
-    <link rel="stylesheet" href="/static/css/pages.css?v=1.2">
+    <link rel="stylesheet" href="/static/css/base.css?v=2.0">
+    <link rel="stylesheet" href="/static/css/shell.css?v=2.0">
+    <link rel="stylesheet" href="/static/css/components.css?v=2.0">
+    <link rel="stylesheet" href="/static/css/pages.css?v=2.0">
+    <link rel="stylesheet" href="/static/css/yuketang.css?v=2.0">
+    <script>
+    (function(){
+        window.__PAGE_ERRORS__ = [];
+        window.addEventListener('error', function(e) {
+            var err = { message: e.message, filename: e.filename, lineno: e.lineno, colno: e.colno };
+            window.__PAGE_ERRORS__.push(err);
+            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.log_error === 'function') {
+                window.pywebview.api.log_error(JSON.stringify(err));
+            }
+        });
+        window.addEventListener('unhandledrejection', function(e) {
+            var msg = e.reason ? (e.reason.message || String(e.reason)) : 'unhandled rejection';
+            window.__PAGE_ERRORS__.push({ message: msg });
+            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.log_error === 'function') {
+                window.pywebview.api.log_error('UnhandledRejection: ' + msg);
+            }
+        });
+        // 桌面窗口原生按钮前置兜底绑定（防止任何下游脚本加载异常破坏基础关闭/最小化/最大化）
+        window.desktopMinimize = window.desktopMinimize || function() {
+            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.minimize === 'function') {
+                window.pywebview.api.minimize();
+            }
+        };
+        window.desktopToggleMaximize = window.desktopToggleMaximize || function() {
+            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.toggle_maximize === 'function') {
+                window.pywebview.api.toggle_maximize().then(function(isMax) {
+                    if (typeof window.updateMaximizeIcon === 'function') window.updateMaximizeIcon(isMax);
+                }).catch(function(){});
+            }
+        };
+        window.desktopClose = window.desktopClose || function() {
+            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.close === 'function') {
+                window.pywebview.api.close();
+            } else {
+                window.close();
+            }
+        };
+        window.desktopStartResize = window.desktopStartResize || function(edge) {
+            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.start_resize === 'function') {
+                window.pywebview.api.start_resize(edge);
+            }
+        };
+        window.desktopDragWindow = window.desktopDragWindow || function() {
+            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.drag_window === 'function') {
+                window.pywebview.api.drag_window();
+            }
+        };
+        var urlTheme = location.search.indexOf('theme=dark') !== -1 ? 'dark' : (location.search.indexOf('theme=light') !== -1 ? 'light' : null);
+        var t = urlTheme || localStorage.getItem('quiz_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+        if (location.search.indexOf('desktop=1') !== -1 || window.pywebview || navigator.userAgent.indexOf('pywebview') !== -1) {
+            document.documentElement.classList.add('desktop-mode');
+        }
+    })();
+    </script>
 </head>
 <body>
 
-<!-- ===== 题库选择界面（启动首屏：默认可见，避免首帧闪现练习页空白壳）===== -->
+<!-- Windows 11 Frameless Resize Handles (8 方向原生拖拽缩放边界) -->
+<div class="win-resize-handle top" onmousedown="desktopStartResize('top')" aria-hidden="true"></div>
+<div class="win-resize-handle bottom" onmousedown="desktopStartResize('bottom')" aria-hidden="true"></div>
+<div class="win-resize-handle left" onmousedown="desktopStartResize('left')" aria-hidden="true"></div>
+<div class="win-resize-handle right" onmousedown="desktopStartResize('right')" aria-hidden="true"></div>
+<div class="win-resize-handle top-left" onmousedown="desktopStartResize('top-left')" aria-hidden="true"></div>
+<div class="win-resize-handle top-right" onmousedown="desktopStartResize('top-right')" aria-hidden="true"></div>
+<div class="win-resize-handle bottom-left" onmousedown="desktopStartResize('bottom-left')" aria-hidden="true"></div>
+<div class="win-resize-handle bottom-right" onmousedown="desktopStartResize('bottom-right')" aria-hidden="true"></div>
+
+<!-- Windows 11 Native Caption Bar (桌面沉浸式标题按钮) -->
+<div class="win-caption-bar" id="winCaptionBar">
+    <button class="win-caption-btn" onclick="desktopMinimize();" title="最小化" aria-label="最小化">
+        <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
+    </button>
+    <button class="win-caption-btn win-caption-btn-max" onclick="desktopToggleMaximize();" title="最大化" aria-label="最大化">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="9" height="9"/></svg>
+    </button>
+    <button class="win-caption-btn win-caption-close close" onclick="desktopClose();" title="关闭" aria-label="关闭">
+        <svg width="10" height="10" viewBox="0 0 10 10" stroke="currentColor" stroke-width="1.1"><path d="M1 1l8 8M9 1L1 9"/></svg>
+    </button>
+</div>
+
+<div class="app-shell" id="appShellRoot">
+    <!-- ===== 左侧边栏 (Sidebar: 224px / 56px) ===== -->
+    <aside class="sidebar app-sidebar" id="appSidebar" aria-label="工作台主导航">
+        <div class="sidebar-header" id="sidebarHeader" onclick="if(document.getElementById('appSidebar').classList.contains('collapsed')) { AppShell.toggleSidebar(); }">
+            <a href="#" class="brand-mark" onclick="if(!document.getElementById('appSidebar').classList.contains('collapsed')){ AppShell.navigate('home'); } else { AppShell.toggleSidebar(); } return false;">
+                <span class="brand-monogram">学</span>
+                <span class="brand-text">学习工作台</span>
+            </a>
+            <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" onclick="event.stopPropagation(); AppShell.toggleSidebar();" title="展开/收起侧边栏 (Alt+B)" aria-label="展开/收起侧边栏">
+                <span data-icon="chevron-left"></span>
+            </button>
+        </div>
+
+        <div class="sidebar-body">
+            <div class="sidebar-nav">
+                <a href="#home" class="sidebar-item active" data-view="home">
+                    <span class="item-icon" data-icon="home"></span>
+                    <span class="item-label">工作台首页</span>
+                </a>
+            </div>
+
+            <div class="sidebar-section-label">学习 · LEARN</div>
+            <div class="sidebar-nav">
+                <a href="#practice" class="sidebar-item" data-view="practice">
+                    <span class="item-icon" data-icon="play"></span>
+                    <span class="item-label">题库练习</span>
+                </a>
+                <a href="#banks" class="sidebar-item" data-view="banks">
+                    <span class="item-icon" data-icon="book"></span>
+                    <span class="item-label">题库管理</span>
+                </a>
+                <a href="#review" class="sidebar-item" data-view="review">
+                    <span class="item-icon" data-icon="repeat"></span>
+                    <span class="item-label">错题复习</span>
+                </a>
+            </div>
+
+            <div class="sidebar-section-label">工具 · TOOLS</div>
+            <div class="sidebar-nav">
+                <a href="#yuketang" class="sidebar-item" data-view="yuketang">
+                    <span class="item-icon" data-icon="graduation-cap"></span>
+                    <span class="item-label">课程控制台</span>
+                </a>
+                <a href="#stats" class="sidebar-item" data-view="stats">
+                    <span class="item-icon" data-icon="bar-chart"></span>
+                    <span class="item-label">数据统计</span>
+                </a>
+                <a href="#settings" class="sidebar-item" data-view="settings">
+                    <span class="item-icon" data-icon="sliders"></span>
+                    <span class="item-label">系统设置</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="theme-toggle-wrap" style="padding: 4px 10px; display: flex; align-items: center; justify-content: space-between;">
+                <span class="item-label" style="font-size: 0.78rem; color: var(--text-tertiary);">界面主题</span>
+                <button class="btn btn-outline btn-sm theme-btn" onclick="toggleTheme()" title="切换深色/浅色主题" style="padding: 4px 8px;">
+                    <span class="theme-icon" data-icon="moon"></span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 移动端遮罩层 -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="AppShell.closeDrawer()"></div>
+
+    <!-- ===== 右侧主体视口 ===== -->
+    <div class="main-viewport">
+        <!-- 顶栏 (TopBar: 52px) -->
+        <header class="topbar" onmousedown="if(event.target.closest('button, input, select, a, .win-nav-capsule') === null) { desktopDragWindow(); }">
+            <div class="topbar-left">
+                <div class="win-nav-capsule">
+                    <button class="win-nav-capsule-btn nav-btn" id="navBackBtn" onclick="AppShell.goBack();" title="后退 (Alt+Left)" aria-label="后退">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13L5 8l5-5"/></svg>
+                    </button>
+                    <button class="win-nav-capsule-btn nav-btn" id="navForwardBtn" onclick="AppShell.goForward();" title="前进 (Alt+Right)" aria-label="前进">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+                    </button>
+                </div>
+                <button class="hamburger-btn" onclick="AppShell.toggleDrawer()" title="打开主菜单">
+                    <span data-icon="menu"></span>
+                </button>
+                <div class="page-title-group">
+                    <h1 class="shell-title" id="shellTitle">工作台首页</h1>
+                    <span class="shell-subtitle" id="shellSubtitle">学习概览与快捷入口</span>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="quick-status-chip">
+                    <span class="qs-dot" id="globalStatusDot"></span>
+                    <span class="qs-text" id="globalStatusText">系统就绪</span>
+                </div>
+                <button class="btn btn-outline btn-sm" id="topbarActionBtn" onclick="showBankSelectScreen();" title="快速切换题库">
+                    <span data-icon="book"></span> 切换题库
+                </button>
+            </div>
+        </header>
+
+        <!-- 视图主工作区 (SPA Views) -->
+        <main class="workbench-body">
+            <!-- 1. 工作台首页视图 (Home View) -->
+            <section class="view-panel active" id="view-home">
+                <div style="max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+                    <!-- 继续学习卡片 -->
+                    <div class="question-card" id="homeContinueCard" style="padding: 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                            <div>
+                                <span class="q-type" style="background: var(--accent-subtle); color: var(--accent);">最近学习</span>
+                                <h2 style="font-size: 1.25rem; font-weight: 600; margin-top: 8px;" id="homeBankName">准备开始练习</h2>
+                            </div>
+                            <span class="stat-chip" id="homeBankCount">0 题</span>
+                        </div>
+                        <div class="progress-row" style="margin-bottom: 16px;">
+                            <div class="progress-track" style="height: 6px;"><div class="progress-fill" id="homeProgressFill" style="width: 0%;"></div></div>
+                            <span class="progress-text" id="homeProgressText">尚未加载题库</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn btn-primary" onclick="resumeHomePractice();">
+                                <span data-icon="play"></span> 继续练习
+                            </button>
+                            <button class="btn btn-outline" onclick="showBankSelectScreen();">
+                                <span data-icon="book"></span> 选择其他题库
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 快捷功能分区网格 (WinUI 3 Action Card Matrix · 对标 Windows 11 设置与仪表盘) -->
+                    <div class="win-card-grid">
+                        <div class="win-action-card" onclick="resumeHomePractice();">
+                            <div class="win-card-icon blue"><span data-icon="play"></span></div>
+                            <div class="win-card-text">
+                                <div class="win-card-title">题库练习</div>
+                                <div class="win-card-desc">专注答题 · 自动记录对错与解析</div>
+                            </div>
+                            <div class="win-card-arrow">›</div>
+                        </div>
+
+                        <div class="win-action-card" onclick="AppShell.navigate('banks');">
+                            <div class="win-card-icon purple"><span data-icon="book"></span></div>
+                            <div class="win-card-text">
+                                <div class="win-card-title">题库管理</div>
+                                <div class="win-card-desc">本地 JSON 题库切换与文件导入</div>
+                            </div>
+                            <div class="win-card-arrow">›</div>
+                        </div>
+
+                        <div class="win-action-card" onclick="AppShell.navigate('review');">
+                            <div class="win-card-icon amber"><span data-icon="repeat"></span></div>
+                            <div class="win-card-text">
+                                <div class="win-card-title">错题巩固</div>
+                                <div class="win-card-desc">针对易错题目分级强化，连对移出</div>
+                            </div>
+                            <div class="win-card-arrow">›</div>
+                        </div>
+
+                        <div class="win-action-card" onclick="AppShell.navigate('yuketang');">
+                            <div class="win-card-icon green"><span data-icon="graduation-cap"></span></div>
+                            <div class="win-card-text">
+                                <div class="win-card-title">雨课堂控制台</div>
+                                <div class="win-card-desc">自动化学习调度与多线程任务监控</div>
+                            </div>
+                            <div class="win-card-arrow">›</div>
+                        </div>
+
+                        <div class="win-action-card" onclick="AppShell.navigate('stats');">
+                            <div class="win-card-icon blue"><span data-icon="bar-chart"></span></div>
+                            <div class="win-card-text">
+                                <div class="win-card-title">数据统计</div>
+                                <div class="win-card-desc">环形正确率仪表盘与题型掌握度</div>
+                            </div>
+                            <div class="win-card-arrow">›</div>
+                        </div>
+
+                        <div class="win-action-card" onclick="AppShell.navigate('settings');">
+                            <div class="win-card-icon slate"><span data-icon="sliders"></span></div>
+                            <div class="win-card-text">
+                                <div class="win-card-title">系统设置</div>
+                                <div class="win-card-desc">深浅色主题切换与答题规则配置</div>
+                            </div>
+                            <div class="win-card-arrow">›</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. 刷题练习视图 (Practice View) -->
+            <section class="view-panel" id="view-practice">
+                <div class="top-zone">
+                    <div class="header">
+                        <div class="header-top">
+                            <div class="brand">
+                                <span class="seal">题</span>
+                                <h1 id="appTitle">题库练习</h1>
+                            </div>
+                            <div class="header-actions">
+                                <button class="btn btn-outline btn-sm" onclick="showBankSelectScreen()" title="切换题库"><span data-icon="book"></span> 题库</button>
+                                <button class="btn btn-outline btn-sm" onclick="showImportDialog()" title="导入题库"><span data-icon="upload"></span> 导入</button>
+                            </div>
+                        </div>
+                        <div class="stats-bar page-stats">
+                            <span class="stat-chip">总题数 <span class="num" id="totalCount">0</span></span>
+                            <span class="stat-chip">总已做 <span class="num" id="totalDoneCount">0</span></span>
+                            <span class="stat-chip">本次已做 <span class="num" id="sessionDoneCount">0</span></span>
+                            <span class="stat-chip">总错题 <span class="num" id="totalWrongCount">0</span></span>
+                            <span class="stat-chip">本次错题 <span class="num" id="sessionWrongCount">0</span></span>
+                            <span class="stat-chip">正确率 <span class="num" id="accuracy">--</span></span>
+                        </div>
+                        <div class="progress-row">
+                            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+                            <span class="progress-text" id="progressText">准备开始练习</span>
+                        </div>
+                    </div>
+    <div class="section-tabs-row" id="sectionTabsRow">
+                        <div class="section-tabs" id="sectionTabs"></div>
+                        <button class="tabs-toggle" id="tabsToggle" style="display:none;" onclick="toggleTabsDrawer()" title="展开全部分类"><span class="tt-icon">❯</span></button>
+                    </div>
+                    <div class="tabs-drawer" id="tabsDrawer">
+                        <div class="tabs-drawer-inner">
+                            <div class="tabs-drawer-grid" id="tabsDrawerGrid"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="container">
+                    <div id="questionsContainer"></div>
+                    <aside id="notePanel"></aside>
+                    <div class="sidebar" id="sidebar">
+                        <div class="sidebar-content" id="sidebarContent"></div>
+                    </div>
+                    <div class="bottom-bar" id="bottomBar">
+                        <div class="bottom-bar-inner">
+                            <div class="bar-group" id="groupStart">
+                                <button class="btn btn-primary" onclick="startPractice()" id="btnStart"><span data-icon="play"></span> 开始练习</button>
+                                <label id="priorityLabel" class="chk-label">
+                                    <input type="checkbox" id="priorityNew" checked> 优先未做
+                                </label>
+                            </div>
+                            <div class="bar-group" id="groupWrongReview">
+                                <button class="btn btn-outline" onclick="reviewWrong()" id="btnReview" style="display:none;"><span data-icon="repeat"></span> 复习错题</button>
+                                <button class="btn btn-warn" onclick="resetWrong()" id="btnResetWrong" style="display:none;"><span data-icon="trash"></span> 清空错题</button>
+                            </div>
+                            <div class="bar-group" id="groupWrongFilters" style="display:none;">
+                                <select id="wrongFilter" class="select-styled" multiple size="1" onchange="onFilterChange()" title="按错误次数筛选">
+                                    <option value="all" selected>全部错题</option>
+                                    <option value="1">错1次</option>
+                                    <option value="2">错2次</option>
+                                    <option value="3">错3次</option>
+                                    <option value="4">错4次</option>
+                                    <option value="5">错5次</option>
+                                </select>
+                                <label id="thresholdLabel" class="threshold-pill">连续答对移除：<input type="number" id="removeThreshold" value="3" min="1" max="10" onchange="setThresholdValue(this.value)"> 次</label>
+                            </div>
+                            <div class="bottom-bar-divider" id="barDivider"></div>
+                            <div class="bar-group" id="groupAux">
+                                <button class="btn btn-outline btn-sm" onclick="showStats()"><span data-icon="bar-chart"></span> 详细统计</button>
+                                <button class="btn btn-outline btn-sm" id="btnThresholdModal" onclick="setThreshold()"><span data-icon="sliders"></span> 阈值</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. 题库管理视图 (Banks View) -->
+            <section class="view-panel" id="view-banks">
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h2 style="font-size: 1.15rem; font-weight: 600;">本地题库管理</h2>
+                            <p class="muted" style="font-size: 0.82rem;">存放于同级 question_banks/ 目录中的 JSON 题库</p>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="showImportDialog();">
+                            <span data-icon="upload"></span> 导入新题库
+                        </button>
+                    </div>
+                    <div id="banksListContainer" class="bank-list"></div>
+                </div>
+            </section>
+
+            <!-- 4. 错题复习视图 (Review View) -->
+            <section class="view-panel" id="view-review">
+                <div style="max-width: 760px; margin: 0 auto;">
+                    <div class="question-card" style="padding: 24px;">
+                        <h2 style="font-size: 1.15rem; font-weight: 600; margin-bottom: 8px;">错题针对性复习</h2>
+                        <p class="muted" style="font-size: 0.85rem; margin-bottom: 16px;">
+                            错题会在您练习答错时自动计入。在此您可以按照错误频次精细筛选题目，或者清空已攻克的错题。
+                        </p>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn btn-primary" onclick="reviewWrong();">
+                                <span data-icon="repeat"></span> 筛选并开始错题复习
+                            </button>
+                            <button class="btn btn-warn" onclick="resetWrong();">
+                                <span data-icon="trash"></span> 清空错题本
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. 数据统计视图 (Stats View) -->
+            <section class="view-panel" id="view-stats">
+                <div style="max-width: 760px; margin: 0 auto;">
+                    <div class="question-card" style="padding: 24px;">
+                        <h2 style="font-size: 1.15rem; font-weight: 600; margin-bottom: 16px;">做题历史与数据分析</h2>
+                        <div id="statsTableSlot"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. 系统设置视图 (Settings View) -->
+            <section class="view-panel" id="view-settings">
+                <div style="max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;">
+                    <div class="question-card" style="padding: 22px;">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px;">界面外观与主题</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn btn-outline btn-sm" onclick="setTheme('light');">
+                                <span data-icon="sun"></span> 浅色模式 (Light)
+                            </button>
+                            <button class="btn btn-outline btn-sm" onclick="setTheme('dark');">
+                                <span data-icon="moon"></span> 深色模式 (Dark)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="question-card" style="padding: 22px;">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px;">错题本移除规则</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+                            连续答对指定次数后，该题目将自动从错题本中移除：
+                        </p>
+                        <button class="btn btn-outline btn-sm" onclick="setThreshold();">
+                            <span data-icon="sliders"></span> 设置连续答对阈值
+                        </button>
+                    </div>
+
+                    <div class="question-card" style="padding: 22px;">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px;">键盘快捷键参考</h3>
+                        <table class="stats-table">
+                            <tr><td><kbd>1</kbd> ~ <kbd>9</kbd></td><td>快速单选作答 (选择对应项)</td></tr>
+                            <tr><td><kbd>→</kbd> 或 <kbd>N</kbd></td><td>切到下一题 (已作答时生效)</td></tr>
+                            <tr><td><kbd>←</kbd> 或 <kbd>P</kbd></td><td>切回上一题</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="question-card" style="padding: 22px;">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 8px;">关于学习工作台</h3>
+                        <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.6;">
+                            纯本地运行，零依赖数据库。做题进度持久化存储于浏览器 localStorage 中。
+                        </p>
+                        <div style="margin-top: 12px;">
+                            <button class="btn btn-danger-outline btn-sm" onclick="shutdownServer();">
+                                <span data-icon="power"></span> 关闭服务并退出程序
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. 雨课堂控制台视图 (Yuketang View) -->
+            <section class="view-panel" id="view-yuketang">
+                <div class="yk-app" style="min-height: auto; height: auto;">
+                    <!-- 顶栏状态指示条（嵌入工作台模式） -->
+                    <div class="yk-status-bar-card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; padding: 12px 18px; background: var(--surface-main); border: 1px solid var(--hairline-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="yk-seal">雨</span>
+                            <div>
+                                <h2 style="font-size: 0.98rem; font-weight: 600; margin: 0;">雨课堂自动化控制台</h2>
+                                <span style="font-size: 0.74rem; color: var(--text-tertiary); font-family: var(--font-mono);">YUKETANG AUTOMATION CONSOLE</span>
+                            </div>
+                            <span class="state-badge" id="stateBadge" style="margin-left: 8px;"><i class="dot"></i><b id="stateText">空闲</b></span>
+                        </div>
+                        <div class="hud-chips" id="hudChips" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span class="chip"><b id="stTotal">0</b><i>任务总数</i></span>
+                            <span class="chip ok"><b id="stDone">0</b><i>已完成</i></span>
+                            <span class="chip warn"><b id="stActive">0</b><i>进行中</i></span>
+                            <span class="chip"><b id="stQueued">0</b><i>排队中</i></span>
+                            <span class="chip bad"><b id="stFailed">0</b><i>失败</i></span>
+                        </div>
+                        <div>
+                            <span class="mock-badge" id="mockBadge">长江雨课堂 · changjiang.yuketang.cn</span>
+                        </div>
+                    </div>
+
+                    <!-- 配置面板 (idle 态) -->
+                    <section class="yk-config" id="configPanel">
+                        <div class="cfg-card">
+                            <h2>课程接入参数</h2>
+                            <p class="muted">真实模式将连接长江雨课堂执行；认证字段仅存内存，不落盘。填入「演示参数」可离线体验全流程。</p>
+                            <div class="cfg-grid cfg-auth">
+                                <label>课堂 ID<input id="f_classroom_id" placeholder="如 12345678"></label>
+                                <label>签名 SIGN<input id="f_sign" placeholder="URL 中的 sign 参数"></label>
+                                <label>学校 ID<input id="f_university_id" placeholder="学校 ID / uv_id"></label>
+                                <label>CSRF 令牌<input id="f_csrf_token" type="password" placeholder="Cookie: csrftoken"></label>
+                                <label>会话 ID<input id="f_session_id" type="password" placeholder="Cookie: sessionid"></label>
+                            </div>
+                            <details class="run-params">
+                                <summary>运行参数（对应原脚本 .env 配置）</summary>
+                                <div class="cfg-grid">
+                                    <label>视频倍速<input id="f_video_speed" value="1.5"></label>
+                                    <label>心跳间隔（秒）<input id="f_heartbeat_interval" value="5"></label>
+                                    <label>最大并发数<input id="f_max_workers" value="3"></label>
+                                    <label>试看视频数<input id="f_test_video_count" value="5"></label>
+                                    <label>图文停留（秒）<input id="f_richtext_stay_seconds" value="3"></label>
+                                    <label>图文跳过延迟（秒）<input id="f_richtext_skip_delay" value="1"></label>
+                                    <label class="chk"><input type="checkbox" id="f_use_concurrent" checked><em>启用并发执行</em></label>
+                                    <label class="chk"><input type="checkbox" id="f_skip_completed" checked><em>跳过已完成</em></label>
+                                    <label class="chk"><input type="checkbox" id="f_auto_richtext" checked><em>自动处理图文</em></label>
+                                    <label class="chk"><input type="checkbox" id="f_test_mode"><em>测试模式</em></label>
+                                    <label class="chk"><input type="checkbox" id="f_debug"><em>调试（快速模拟）</em></label>
+                                </div>
+                            </details>
+                            <div class="cfg-actions">
+                                <button class="btn btn-outline" onclick="fillDemoParams()">一键填入演示参数</button>
+                                <button class="btn btn-primary yk-btn-lg" id="btnAnalyze" onclick="doAnalyze()">分析课程结构</button>
+                            </div>
+                            <p class="err" id="cfgError"></p>
+                        </div>
+
+                        <aside class="yk-side">
+                            <div class="side-card">
+                                <h4>获取配置参数</h4>
+                                <ol class="side-steps">
+                                    <li><b>课堂参数</b><span>课程页 URL 中提取：<br><code class="g-code">classroom_id = 12345678</code><code class="g-code">sign = your_sign</code></span></li>
+                                    <li><b>Cookie 参数</b><span>F12 → Application → Cookies：<br><code class="g-code">csrftoken / sessionid / uv_id</code></span></li>
+                                </ol>
+                                <p class="g-tip">uv_id 即「学校 ID」；三个值分别填入左侧对应输入框</p>
+                            </div>
+                            <div class="side-card">
+                                <h4>工作原理</h4>
+                                <ul class="g-flow">
+                                    <li><b>课程分析</b>遍历章节，识别视频与图文</li>
+                                    <li><b>任务筛选</b>提取未完成的 leaf 节点</li>
+                                    <li><b>视频模拟</b>播放事件序列＋定时心跳</li>
+                                    <li><b>图文打卡</b>阅读停留后确认已读</li>
+                                    <li><b>进度同步</b>实时状态、断点续看</li>
+                                </ul>
+                            </div>
+                            <div class="side-card demo-note">
+                                双模式：演示参数＝离线体验；真实参数＝连接长江雨课堂。
+                            </div>
+                        </aside>
+                    </section>
+
+                    <!-- 扫描视图 (analyzing) -->
+                    <section class="yk-scanning" id="scanPanel" hidden>
+                        <div class="scan-core">
+                            <div class="scan-ring"><div class="scan-sweep"></div><div class="scan-core-dot"></div></div>
+                            <h2>正在扫描课程</h2>
+                            <p class="scan-phase" id="scanPhase">正在获取课程数据</p>
+                            <p class="scan-count">已发现 <b id="discovered">0</b> 个任务</p>
+                        </div>
+                    </section>
+
+                    <!-- 主控台：Timeline + Execution Core -->
+                    <main class="yk-console" id="consolePanel" hidden>
+                        <aside class="yk-timeline-wrap panel">
+                            <h3>课程时间线</h3>
+                            <ol class="timeline" id="timeline"></ol>
+                        </aside>
+                        <section class="yk-exec">
+                            <div class="exec-current panel">
+                                <h4>当前任务</h4>
+                                <div id="curBody"><p class="muted">暂无执行中的任务</p></div>
+                            </div>
+                            <div class="exec-workers panel">
+                                <h4>执行线程</h4>
+                                <div id="workersBox"><p class="muted">空闲 · 无执行线程</p></div>
+                            </div>
+                            <div class="terminal-banner" id="terminalBanner" hidden></div>
+                            <div class="exec-actions" id="execActions"></div>
+                        </section>
+                    </main>
+
+                    <!-- 迷你终端 -->
+                    <footer class="yk-logs" style="margin-top: 14px;">
+                        <div class="term">
+                            <div class="term-head">
+                                <span data-icon="terminal" style="margin-right: 6px;"></span>
+                                <b>系统控制台日志</b><i id="logCount">0 条</i>
+                            </div>
+                            <pre class="term-body mono" id="logTail"></pre>
+                        </div>
+                    </footer>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<!-- ===== 题库选择界面（启动首屏 / 弹窗层，兼容测试与模态）===== -->
 <div id="bankSelectScreen" class="bank-select-screen">
     <div class="bank-panel">
         <div class="panel-head">
@@ -24,8 +591,8 @@
         </div>
         <div class="bank-list" id="bankCards"></div>
         <div class="panel-footer">
-            <button class="btn btn-outline btn-sm" onclick="location.href='/'">🏠 返回工作台</button>
-            <button class="btn btn-danger-outline btn-sm" onclick="shutdownServer()">🚪 关闭程序</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('bankSelectScreen').style.display='none';">关闭</button>
+            <button class="btn btn-danger-outline btn-sm" onclick="shutdownServer()"><span data-icon="power"></span> 关闭程序</button>
         </div>
     </div>
 </div>
@@ -42,124 +609,53 @@
         </div>
         <div class="import-controls">
             <input type="file" id="importFile" accept=".json" style="display:none;" onchange="onFileSelected(this)">
-            <button class="btn btn-outline" onclick="document.getElementById('importFile').click()" style="width:100%;padding:10px;">📁 选择本地 JSON 文件</button>
+            <button class="btn btn-outline" onclick="document.getElementById('importFile').click()" style="width:100%;padding:10px;"><span data-icon="upload"></span> 选择本地 JSON 文件</button>
             <span id="fileName" class="file-name"></span>
-            <button class="btn btn-primary" id="btnImport" onclick="handleImport()" style="width:100%;padding:10px;font-size:0.9rem;margin-top:8px;">🚀 导入并开始</button>
-            <button type="button" class="link-btn" onclick="openFormatGuide()" style="margin-top:8px;">📋 查看导入格式说明</button>
+            <button class="btn btn-primary" id="btnImport" onclick="handleImport()" style="width:100%;padding:10px;font-size:0.9rem;margin-top:8px;"><span data-icon="play"></span> 导入并开始</button>
+            <button type="button" class="link-btn" onclick="openFormatGuide()" style="margin-top:8px;"><span data-icon="file-text"></span> 查看导入格式说明</button>
         </div>
         <label class="wrong-review-toggle">
             <input type="checkbox" id="enableWrongReview" checked>
             启用错题复习功能
         </label>
         <p id="importError" class="error-text"></p>
-    </div>
-</div>
-
-<!-- ===== 顶栏 + 分类标签（全宽区）===== -->
-<div class="top-zone">
-    <div class="header">
-        <div class="header-top">
-            <div class="brand">
-                <span class="seal">题</span>
-                <h1 id="appTitle">题库练习</h1>
-            </div>
-            <div class="header-actions">
-                <button class="btn btn-outline btn-sm" onclick="location.href='/'" title="返回工作台">🏠</button>
-                <button class="btn btn-outline btn-sm" onclick="showBankSelectScreen()" title="切换题库">📚 题库</button>
-                <button class="btn btn-outline btn-sm" onclick="showImportDialog()" title="导入题库">📥 导入题库</button>
-                <button class="theme-toggle" onclick="toggleTheme()" title="切换深色模式">🌓</button>
-            </div>
+        <div class="panel-footer">
+            <button type="button" class="btn btn-outline btn-sm" onclick="hideImportScreen()">取消导入</button>
         </div>
-        <div class="stats-bar page-stats">
-            <span class="stat-chip">📝 总题数: <span class="num" id="totalCount">0</span></span>
-            <span class="stat-chip">📋 总已做: <span class="num" id="totalDoneCount">0</span></span>
-            <span class="stat-chip">✅ 本次已做: <span class="num" id="sessionDoneCount">0</span></span>
-            <span class="stat-chip">❌ 总错题: <span class="num" id="totalWrongCount">0</span></span>
-            <span class="stat-chip">⚠️ 本次错题: <span class="num" id="sessionWrongCount">0</span></span>
-            <span class="stat-chip">📊 正确率: <span class="num" id="accuracy">--</span></span>
-        </div>
-        <div class="progress-row">
-            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-            <span class="progress-text" id="progressText">准备开始练习</span>
-        </div>
-    </div>
-    <div class="section-tabs-row" id="sectionTabsRow">
-        <div class="section-tabs" id="sectionTabs"></div>
-        <button class="tabs-toggle" id="tabsToggle" style="display:none;" onclick="toggleTabsDrawer()" title="展开全部分类"><span class="tt-icon">❯</span></button>
-    </div>
-    <div class="tabs-drawer" id="tabsDrawer">
-        <div class="tabs-drawer-inner">
-            <div class="tabs-drawer-grid" id="tabsDrawerGrid"></div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== 主内容（题目卡片列）===== -->
-<div class="container">
-    <div id="questionsContainer"></div>
-    <aside id="notePanel"></aside>
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-content" id="sidebarContent"></div>
-    </div>
-    <div class="bottom-bar" id="bottomBar">
-        <div class="bottom-bar-inner">
-            <div class="bar-group">
-                <button class="btn btn-primary" onclick="startPractice()" id="btnStart">🚀 开始练习</button>
-                <label id="priorityLabel">
-                    <input type="checkbox" id="priorityNew" checked> 优先未做
-                </label>
-            </div>
-            <div class="bottom-bar-divider"></div>
-            <div class="bar-group">
-                <button class="btn btn-outline" onclick="reviewWrong()" id="btnReview" style="display:none;">🔁 复习错题</button>
-                <button class="btn btn-warn" onclick="resetWrong()" id="btnResetWrong" style="display:none;">🔄 清空错题</button>
-            </div>
-            <div class="bottom-bar-divider"></div>
-            <div class="bar-group">
-                <button class="btn btn-outline" onclick="showStats()">📊 详细统计</button>
-                <button class="btn btn-outline btn-sm" onclick="setThreshold()">⚙️ 阈值</button>
-            </div>
-        </div>
-        <select id="wrongFilter" style="display:none;" multiple size="1" onchange="onFilterChange()">
-            <option value="all" selected>全部错题</option>
-            <option value="1">错1次</option>
-            <option value="2">错2次</option>
-            <option value="3">错3次</option>
-            <option value="4">错4次</option>
-            <option value="5">错5次</option>
-        </select>
-        <label style="display:none;" id="thresholdLabel">连续答对移除：<input type="number" id="removeThreshold" value="3" min="1" style="width:50px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;text-align:center;" onchange="saveToLocalStorage()">次</label>
     </div>
 </div>
 
 <!-- ===== 历史进度抉择对话框 ===== -->
-<div id="progressOverlay" class="modal-overlay" style="display:none;">
+<div id="progressOverlay" class="progress-dialog-overlay" style="display:none;">
     <div class="progress-dialog">
-        <h3>📌 发现历史进度</h3>
+        <h3><span data-icon="info"></span> 发现历史进度</h3>
         <div id="pdBody"></div>
         <div class="pd-actions">
-            <button class="btn btn-primary" id="pdContinueBtn">▶ 继续上次进度</button>
-            <button class="btn btn-warn" id="pdRestartBtn">🔄 从头开始</button>
+            <button class="btn btn-primary" id="pdContinueBtn"><span data-icon="play"></span> 继续上次进度</button>
+            <button class="btn btn-warn" id="pdRestartBtn"><span data-icon="repeat"></span> 从头开始</button>
             <button class="btn btn-outline" id="pdCancelBtn">取消</button>
         </div>
     </div>
 </div>
 
-<!-- 脚本：按 状态 → 基础 → 数据 → 界面 → 流程 的顺序加载 -->
-<script src="/static/js/state.js?v=1.2"></script>
-<script src="/static/js/storage.js?v=1.2"></script>
-<script src="/static/js/ui.js?v=1.2"></script>
-<script src="/static/js/bank-loader.js?v=1.2"></script>
-<script src="/static/js/bank-select.js?v=1.2"></script>
-<script src="/static/js/import-ui.js?v=1.2"></script>
-<script src="/static/js/question-render.js?v=1.2"></script>
-<script src="/static/js/answer.js?v=1.2"></script>
-<script src="/static/js/matching.js?v=1.2"></script>
-<script src="/static/js/practice.js?v=1.2"></script>
-<script src="/static/js/navigation.js?v=1.2"></script>
-<script src="/static/js/stats.js?v=1.2"></script>
-<script src="/static/js/main.js?v=1.2"></script>
-<script src="/static/js/format-guide.js?v=1.2"></script>
+<!-- 脚本体系：严格按照 基础图标 → 全局状态 → 存储持久化 → 界面与弹窗 → 题库数据核心 → 导入界面 → 格式说明 → 题库选择 → 题目渲染 → 答题 → 匹配 → 练习流程 → 分类导航 → 统计 → 雨课堂 → 外壳路由控制器 → 入口 的顺序加载 -->
+<script src="/static/js/icons.js?v=2.7.1"></script>
+<script src="/static/js/state.js?v=2.7.1"></script>
+<script src="/static/js/storage.js?v=2.7.1"></script>
+<script src="/static/js/ui.js?v=2.7.1"></script>
+<script src="/static/js/bank-loader.js?v=2.7.1"></script>
+<script src="/static/js/import-ui.js?v=2.7.1"></script>
+<script src="/static/js/format-guide.js?v=2.7.1"></script>
+<script src="/static/js/bank-select.js?v=2.7.1"></script>
+<script src="/static/js/question-render.js?v=2.7.1"></script>
+<script src="/static/js/answer.js?v=2.7.1"></script>
+<script src="/static/js/matching.js?v=2.7.1"></script>
+<script src="/static/js/practice.js?v=2.7.1"></script>
+<script src="/static/js/navigation.js?v=2.7.1"></script>
+<script src="/static/js/stats.js?v=2.7.1"></script>
+<script src="/static/js/yuketang.js?v=2.7.1"></script>
+<script src="/static/js/app-shell.js?v=2.7.1"></script>
+<script src="/static/js/main.js?v=2.7.1"></script>
 <script>
 // 存活信号：告知服务端浏览器仍开着（超时无信号服务端自动退出释放端口）
 setInterval(function () { fetch('/beacon').catch(function () {}); }, 3000);

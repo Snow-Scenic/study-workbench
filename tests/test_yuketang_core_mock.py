@@ -231,5 +231,7 @@ def test_get_core_returns_mock_by_default(monkeypatch):
 def test_get_core_real_returns_adapter(monkeypatch):
     import config
     monkeypatch.setattr(config, "CORE_IMPL", "real", raising=False)
+    import yuketang_adapter
+    monkeypatch.setattr(yuketang_adapter, "load_upstream_module", lambda src: type("DummyMod", (), {})())
     from yuketang_adapter import RealYukeCore
     assert type(get_core()).__name__ == "RealYukeCore"

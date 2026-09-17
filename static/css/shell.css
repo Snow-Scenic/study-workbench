@@ -1,0 +1,700 @@
+/* ============================================================
+   shell.css — 2026 Desktop App Shell 架构规范
+   规范依据：Linear 暗侧栏 + Apple 顶栏 + Salesforce 语义圆角
+   Sidebar: 224px 展开 / 56px 折叠 | TopBar: 52px | 响应式 3 档
+   ============================================================ */
+
+/* ===== Windows 11 原生无边框 8 方向拖拽手柄 ===== */
+.win-resize-handle {
+    position: fixed;
+    z-index: 99999;
+    background: transparent;
+    pointer-events: auto;
+}
+.win-resize-handle.top { top: 0; left: 8px; right: 8px; height: 6px; cursor: ns-resize; }
+.win-resize-handle.bottom { bottom: 0; left: 8px; right: 8px; height: 6px; cursor: ns-resize; }
+.win-resize-handle.left { left: 0; top: 8px; bottom: 8px; width: 6px; cursor: ew-resize; }
+.win-resize-handle.right { right: 0; top: 8px; bottom: 8px; width: 6px; cursor: ew-resize; }
+.win-resize-handle.top-left { top: 0; left: 0; width: 12px; height: 12px; cursor: nwse-resize; }
+.win-resize-handle.top-right { top: 0; right: 0; width: 12px; height: 12px; cursor: nesw-resize; }
+.win-resize-handle.bottom-left { bottom: 0; left: 0; width: 12px; height: 12px; cursor: nesw-resize; }
+.win-resize-handle.bottom-right { bottom: 0; right: 0; width: 12px; height: 12px; cursor: nwse-resize; }
+
+.desktop-maximized .win-resize-handle,
+body.maximized .win-resize-handle {
+    display: none !important;
+}
+
+:root {
+    --sidebar-w: 224px;
+}
+
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    overflow-x: hidden;
+}
+
+/* 侧边栏折叠态精准同步 --sidebar-w 为 56px */
+:root:has(#appSidebar.collapsed),
+:root:has(.app-sidebar.collapsed),
+.app-shell.sidebar-collapsed,
+.app-shell:has(#appSidebar.collapsed),
+.app-shell:has(.app-sidebar.collapsed),
+body:has(#appSidebar.collapsed) {
+    --sidebar-w: 56px !important;
+}
+
+/* 无侧边栏或独立刷题视图场景下，--sidebar-w 归零，底栏绝对水平居中 */
+body:not(:has(#appSidebar)),
+body:not(:has(.app-sidebar)),
+.app-shell:not(:has(.app-sidebar)) {
+    --sidebar-w: 0px !important;
+}
+
+/* ===== 侧边栏 (App Sidebar) ===== */
+.app-sidebar,
+#appSidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: var(--surface-secondary);
+    border-right: 1px solid var(--hairline-strong);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 200;
+    transition: width var(--duration-spring, 280ms) var(--ease-spring-soft),
+                transform var(--duration-spring, 280ms) var(--ease-spring-soft);
+    user-select: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.sidebar-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 52px;
+    border-bottom: 1px solid var(--hairline);
+}
+
+.brand-mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+    min-width: 0;
+}
+
+.brand-monogram {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    color: #FFFFFF;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px var(--accent-glow);
+    transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.brand-mark:hover .brand-monogram {
+    transform: scale(1.05);
+}
+
+.brand-text {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 导航主体内容 */
+.sidebar-body {
+    flex: 1;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidebar-section-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    padding: 12px 10px 4px;
+    white-space: nowrap;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.app-sidebar .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    min-height: 36px;
+    border-radius: var(--radius-xs);  /* WinUI 3: 4px */
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+    white-space: nowrap;
+    position: relative;
+}
+
+.app-sidebar .sidebar-item .item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    transition: color var(--duration-fast) var(--ease-out);
+}
+
+/* WinUI 3 Subtle 悬浮填充 */
+.app-sidebar .sidebar-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .app-sidebar .sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.app-sidebar .sidebar-item:hover .item-icon {
+    color: var(--accent);
+}
+
+/* 选中项：WinUI 3 NavigationView 竖直 Pill 指示器 + 微亮底色 */
+.app-sidebar .sidebar-item.active {
+    background: var(--accent-subtle);
+    color: var(--text-primary);
+    font-weight: 600;
+    border-color: transparent;
+    position: relative;
+}
+
+/* WinUI 3 竖直 pill 指示器 (3px × 16px 品牌色圆角条) */
+.app-sidebar .sidebar-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+    transition: height var(--duration-fast) var(--ease-out);
+}
+
+.app-sidebar .sidebar-item.active .item-icon {
+    color: var(--accent);
+}
+
+.sidebar-footer {
+    padding: 10px 8px;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidebar-footer .sidebar-item {
+    font-size: 0.82rem;
+}
+
+/* 折叠态 (Collapsed: 56px) 深度调优 */
+.app-sidebar.collapsed,
+#appSidebar.collapsed {
+    width: 56px;
+}
+
+.app-sidebar .brand-text,
+.app-sidebar .sidebar-section-label,
+.app-sidebar .item-label,
+.app-sidebar .item-badge {
+    transition: opacity var(--duration-micro) var(--ease-out);
+}
+
+.app-sidebar.collapsed .brand-text,
+.app-sidebar.collapsed .sidebar-section-label,
+.app-sidebar.collapsed .item-label,
+.app-sidebar.collapsed .item-badge,
+#appSidebar.collapsed .brand-text,
+#appSidebar.collapsed .sidebar-section-label,
+#appSidebar.collapsed .item-label,
+#appSidebar.collapsed .item-badge {
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+/* 折叠态下伸缩按钮常驻居中，旋转 180° 为向右箭头，指示用户点击随时展开 */
+.app-sidebar.collapsed .sidebar-collapse-btn,
+#appSidebar.collapsed .sidebar-collapse-btn {
+    display: inline-flex !important;
+    transform: rotate(180deg);
+    margin: 4px auto 0;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    background: var(--surface-hover);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.app-sidebar.collapsed .sidebar-collapse-btn:hover,
+#appSidebar.collapsed .sidebar-collapse-btn:hover {
+    color: var(--accent);
+    background: var(--accent-subtle);
+    transform: rotate(180deg) scale(1.1);
+}
+
+.app-sidebar.collapsed .brand-mark,
+#appSidebar.collapsed .brand-mark {
+    display: none;
+}
+
+.app-sidebar.collapsed .sidebar-header,
+#appSidebar.collapsed .sidebar-header {
+    justify-content: center;
+    padding: 10px 0;
+    cursor: pointer;
+    background: transparent;
+    transition: background-color var(--duration-fast) ease;
+}
+
+.app-sidebar.collapsed .sidebar-header:hover,
+#appSidebar.collapsed .sidebar-header:hover {
+    background-color: var(--surface-hover);
+}
+
+.app-sidebar.collapsed .sidebar-item,
+#appSidebar.collapsed .sidebar-item {
+    justify-content: center;
+    padding: 0;
+    width: 38px;
+    height: 38px;
+    margin: 3px auto;
+    border-radius: var(--radius-md);
+}
+
+.app-sidebar.collapsed .sidebar-item .item-icon,
+#appSidebar.collapsed .sidebar-item .item-icon {
+    margin: 0;
+    width: 20px;
+    height: 20px;
+}
+
+/* 侧栏展开时导航项渐变逐级弹入 (Staggered Cascade with Spring Bounce) */
+.app-sidebar:not(.collapsed) .sidebar-item {
+    animation: staggerNavSpringIn 320ms var(--ease-spring) backwards;
+}
+.app-sidebar:not(.collapsed) .sidebar-nav .sidebar-item:nth-child(1) { animation-delay: 30ms; }
+.app-sidebar:not(.collapsed) .sidebar-nav .sidebar-item:nth-child(2) { animation-delay: 75ms; }
+.app-sidebar:not(.collapsed) .sidebar-nav .sidebar-item:nth-child(3) { animation-delay: 120ms; }
+.app-sidebar:not(.collapsed) .sidebar-nav .sidebar-item:nth-child(4) { animation-delay: 165ms; }
+.app-sidebar:not(.collapsed) .sidebar-nav .sidebar-item:nth-child(5) { animation-delay: 210ms; }
+.app-sidebar:not(.collapsed) .sidebar-nav .sidebar-item:nth-child(6) { animation-delay: 255ms; }
+.app-sidebar:not(.collapsed) .sidebar-nav .sidebar-item:nth-child(7) { animation-delay: 300ms; }
+
+@keyframes staggerNavSpringIn {
+    0% {
+        opacity: 0;
+        transform: translateX(-12px) scale(0.96);
+    }
+    70% {
+        opacity: 1;
+        transform: translateX(2px) scale(1.01);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* 侧栏折叠切换按钮 */
+.sidebar-collapse-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    padding: 4px;
+    border-radius: var(--radius-xs);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.sidebar-collapse-btn:hover {
+    color: var(--text-primary);
+    background: var(--surface-hover);
+}
+
+/* ===== 主视口与顶栏 ===== */
+.main-viewport {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.topbar {
+    height: 48px;
+    flex-shrink: 0;
+    background: var(--bg-app);
+    border-bottom: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* 桌面模式：顶栏作为全宽拖拽区，并右侧留出 Win11 标题按钮空间 */
+.desktop-mode .topbar {
+    -webkit-app-region: drag;
+    padding-right: 150px;
+}
+
+/* 顶栏内的按钮/链接不参与拖拽 */
+.desktop-mode .topbar button,
+.desktop-mode .topbar a,
+.desktop-mode .topbar input,
+.desktop-mode .topbar select,
+.desktop-mode .win-nav-capsule {
+    -webkit-app-region: no-drag;
+}
+
+/* ===== Windows 11 原生控制按钮条 (Top Right) ===== */
+.win-caption-bar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 40px;
+    display: none;
+    z-index: 10000;
+    -webkit-app-region: no-drag;
+}
+
+.desktop-mode .win-caption-bar {
+    display: flex;
+}
+
+.win-caption-btn {
+    width: 46px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background-color 0.1s ease, color 0.1s ease;
+    -webkit-app-region: no-drag;
+    user-select: none;
+}
+
+.win-caption-btn:hover {
+    background: var(--surface-hover);
+}
+
+.win-caption-btn.win-caption-close:hover,
+.win-caption-btn.close:hover {
+    background: #E81123 !important;
+    color: #FFFFFF !important;
+}
+
+.win-caption-btn:active {
+    opacity: 0.75;
+}
+
+/* ===== WinUI 3 前进后退胶囊按钮 (< > Capsule) ===== */
+.win-nav-capsule {
+    display: inline-flex;
+    align-items: center;
+    background: var(--surface-main);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    height: 30px;
+    margin-right: 12px;
+}
+
+.win-nav-capsule-btn,
+.win-nav-capsule .nav-btn {
+    width: 32px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    transition: background-color 0.1s ease, color 0.1s ease, opacity 0.15s ease;
+}
+
+.win-nav-capsule-btn:hover,
+.win-nav-capsule .nav-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+.win-nav-capsule-btn:active,
+.win-nav-capsule .nav-btn:active {
+    background: var(--surface-active);
+}
+
+.win-nav-capsule-btn:disabled,
+.win-nav-capsule-btn.disabled,
+.win-nav-capsule .nav-btn:disabled,
+.win-nav-capsule .nav-btn.disabled {
+    opacity: 0.3;
+    cursor: default;
+    pointer-events: none;
+}
+
+.win-nav-capsule-btn:first-child,
+.win-nav-capsule .nav-btn:first-child {
+    border-right: 1px solid var(--hairline);
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    padding: 6px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+}
+
+.topbar-titles,
+.page-title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.topbar-title,
+.shell-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.2 !important;
+}
+
+.topbar-subtitle,
+.shell-subtitle {
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.2 !important;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* ===== 工作台视图面板容器 ===== */
+.workbench-content,
+.workbench-body {
+    flex: 1;
+    padding: 24px 28px;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.view-panel {
+    display: none;
+}
+
+.view-panel.active {
+    display: block;
+    animation: peerViewEnter var(--duration-comp, 180ms) var(--ease-enter);
+}
+
+.workbench-body.navigating-back .view-panel.active {
+    animation: peerViewBack var(--duration-back, 150ms) var(--ease-back);
+}
+
+@keyframes peerViewEnter {
+    0% {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    100% {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes peerViewBack {
+    0% {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    100% {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* 抽屉遮罩 (Narrow 模式) */
+.drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 190;
+    display: none;
+    animation: fadeIn var(--duration-fast) ease;
+}
+
+.drawer-overlay.active {
+    display: block;
+}
+
+/* ===== 响应式适配 (Responsive Shell) ===== */
+/* 中屏 (900px ~ 1199px): 侧栏自动收缩为 56px */
+@media (min-width: 900px) and (max-width: 1199px) {
+    :root,
+    .app-shell {
+        --sidebar-w: 56px;
+    }
+    :root:has(#appSidebar.manually-expanded),
+    .app-shell:has(.app-sidebar.manually-expanded),
+    body:has(#appSidebar.manually-expanded) {
+        --sidebar-w: 224px;
+    }
+    .app-sidebar:not(.manually-expanded),
+    #appSidebar:not(.manually-expanded) {
+        width: 56px;
+    }
+    .app-sidebar:not(.manually-expanded) .brand-text,
+    .app-sidebar:not(.manually-expanded) .sidebar-section-label,
+    .app-sidebar:not(.manually-expanded) .item-label,
+    .app-sidebar:not(.manually-expanded) .item-badge,
+    #appSidebar:not(.manually-expanded) .brand-text,
+    #appSidebar:not(.manually-expanded) .sidebar-section-label,
+    #appSidebar:not(.manually-expanded) .item-label,
+    #appSidebar:not(.manually-expanded) .item-badge {
+        display: none;
+    }
+    .app-sidebar:not(.manually-expanded) .sidebar-header,
+    #appSidebar:not(.manually-expanded) .sidebar-header {
+        justify-content: center;
+        padding: 12px 0;
+    }
+    .app-sidebar:not(.manually-expanded) .sidebar-item,
+    #appSidebar:not(.manually-expanded) .sidebar-item {
+        justify-content: center;
+        padding: 8px 0;
+    }
+}
+
+/* 窄屏 (< 900px): 侧栏变为临时滑出抽屉 */
+@media (max-width: 899px) {
+    :root,
+    .app-shell {
+        --sidebar-w: 0px !important;
+    }
+    .app-sidebar,
+    #appSidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 240px;
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-modal);
+        z-index: 1000;
+    }
+    .app-sidebar.drawer-open,
+    #appSidebar.drawer-open {
+        transform: translateX(0);
+    }
+    .hamburger-btn {
+        display: inline-flex;
+    }
+    .topbar {
+        padding: 0 16px;
+    }
+    .workbench-content {
+        padding: 16px 12px;
+    }
+}

@@ -2,32 +2,41 @@
 'use strict';
 
 function buildSectionTabsHtml() {
-    const allUnanswered = allQuestions.filter(q => !answeredIds.has(q.id)).length;
-    let html = `<button class="section-tab ${currentSection === 'all' ? 'active' : ''}" onclick="switchSection('all')">全部题库<span class="badge">${allUnanswered}</span></button>`;
-    for (const [key, sec] of Object.entries(questionBank)) {
-        const unansweredCount = sec.questions.filter(q => !answeredIds.has(q.id)).length;
-        html += `<button class="section-tab ${currentSection === key ? 'active' : ''}" onclick="switchSection('${key}')">${sec.label}<span class="badge">${unansweredCount}</span></button>`;
+    const aq = window.allQuestions || (typeof allQuestions !== 'undefined' ? allQuestions : []);
+    const ai = window.answeredIds || (typeof answeredIds !== 'undefined' ? answeredIds : new Set());
+    const qb = window.questionBank || (typeof questionBank !== 'undefined' ? questionBank : {});
+    const wr = window.wrongRecords || (typeof wrongRecords !== 'undefined' ? wrongRecords : {});
+    const secKey = window.currentSection || (typeof currentSection !== 'undefined' ? currentSection : 'all');
+    const reviewEnabled = (window.wrongReviewEnabled !== undefined ? window.wrongReviewEnabled : (typeof wrongReviewEnabled !== 'undefined' ? wrongReviewEnabled : true));
+
+    const allUnanswered = aq.filter(q => !ai.has(q.id)).length;
+    let html = `<button class="section-tab ${secKey === 'all' ? 'active' : ''}" onclick="switchSection('all')">全部题库<span class="badge">${allUnanswered}</span></button>`;
+    for (const [key, sec] of Object.entries(qb)) {
+        const unansweredCount = (sec.questions || []).filter(q => !ai.has(q.id)).length;
+        html += `<button class="section-tab ${secKey === key ? 'active' : ''}" onclick="switchSection('${key}')">${sec.label}<span class="badge">${unansweredCount}</span></button>`;
     }
-    const wrongCount = Object.keys(wrongRecords).length;
-    if ((wrongCount > 0 && wrongReviewEnabled) || currentSection === '__wrong__') {
-        html += `<button class="section-tab ${currentSection === '__wrong__' ? 'active' : ''}" onclick="switchSection('__wrong__')">🔁 错题复习<span class="badge">${wrongCount}</span></button>`;
+    const wrongCount = Object.keys(wr).length;
+    if ((wrongCount > 0 && reviewEnabled) || secKey === '__wrong__') {
+        const iconRepeat = window.UI ? UI.icon('repeat') : '';
+        html += `<button class="section-tab ${secKey === '__wrong__' ? 'active' : ''}" onclick="switchSection('__wrong__')">${iconRepeat} 错题复习<span class="badge">${wrongCount}</span></button>`;
     }
     return html;
 }
 
-let tabsIntroPending = true;   // 每次装载题库后的首次标签渲染播放入场动画，之后切换分类不再重播
+var tabsIntroPending = window.tabsIntroPending = (typeof window.tabsIntroPending !== 'undefined' ? window.tabsIntroPending : true);
 
 function renderSectionTabs() {
     const html = buildSectionTabsHtml();
     const row = document.getElementById('sectionTabs');
     const grid = document.getElementById('tabsDrawerGrid');
-    if (tabsIntroPending && row) {
+    if (window.tabsIntroPending && row) {
         row.classList.add('tabs-intro');
         if (grid) grid.classList.add('tabs-intro');
         setTimeout(() => {
             if (row) row.classList.remove('tabs-intro');
             if (grid) grid.classList.remove('tabs-intro');
         }, 1100);
+        window.tabsIntroPending = false;
         tabsIntroPending = false;
     }
     if (row) row.innerHTML = html;
@@ -72,16 +81,29 @@ function switchSection(key) {
     if (tabsDrawerOpen) toggleTabsDrawer(false);   // 选完自动收回
     hideNotePanel();
     renderSectionTabs();
+    const iconPlay = window.UI ? UI.icon('play') : '';
     document.getElementById('questionsContainer').innerHTML =
-        '<div class="empty-state"><span class="es-icon">👆</span>点击下方 <strong>"开始练习"</strong> 按钮开始做题</div>';
-    document.getElementById('btnStart').style.display = 'inline-block';
-    document.getElementById('btnStart').textContent = '🚀 开始练习';
+        `<div class="empty-state"><span class="es-icon">${iconPlay}</span><p>点击下方 <strong>"开始练习"</strong> 按钮开始做题</p></div>`;
+    document.getElementById('btnStart').style.display = 'inline-flex';
+    document.getElementById('btnStart').innerHTML = `${iconPlay} 开始练习`;
     document.getElementById('progressText').textContent = '准备开始练习';
 
-    // 错题复习分类下显示筛选控件
+    // 错题复习分类下显示筛选控件并调整底栏布局
     const isWrong = key === '__wrong__';
-    document.getElementById('wrongFilter').style.display = isWrong ? 'inline-block' : 'none';
-    document.getElementById('thresholdLabel').style.display = isWrong ? 'inline-block' : 'none';
+    const groupWrongFilters = document.getElementById('groupWrongFilters');
+    const priorityLabel = document.getElementById('priorityLabel');
+    const btnThresholdModal = document.getElementById('btnThresholdModal');
+    const groupWrongReview = document.getElementById('groupWrongReview');
+    const bottomBar = document.getElementById('bottomBar');
+
+    if (groupWrongFilters) groupWrongFilters.style.display = isWrong ? 'inline-flex' : 'none';
+    if (priorityLabel) priorityLabel.style.display = isWrong ? 'none' : 'inline-flex';
+    if (btnThresholdModal) btnThresholdModal.style.display = isWrong ? 'none' : 'inline-flex';
+    if (groupWrongReview && isWrong) groupWrongReview.style.display = 'none';
+    if (bottomBar) bottomBar.classList.toggle('has-wrong-filters', isWrong);
+    if (isWrong) {
+        document.getElementById('btnStart').innerHTML = `${window.UI ? UI.icon('repeat') : ''} 开始复习`;
+    }
 
     updateStats();
     updateProgressUI();
@@ -137,16 +159,22 @@ function refreshSidebar() {
         return;
     }
     let html = '';
-    practiceQuestions.forEach((q, idx) => {
+    const pq = window.practiceQuestions || (typeof practiceQuestions !== 'undefined' ? practiceQuestions : []);
+    const am = window.answeredMap || (typeof answeredMap !== 'undefined' ? answeredMap : {});
+    const ai = window.answeredIds || (typeof answeredIds !== 'undefined' ? answeredIds : new Set());
+    const wr = window.wrongRecords || (typeof wrongRecords !== 'undefined' ? wrongRecords : {});
+    const curIdx = window.currentQuestionIndex || (typeof currentQuestionIndex !== 'undefined' ? currentQuestionIndex : 0);
+
+    pq.forEach((q, idx) => {
         let cls = 'gray';
         // 优先用当前会话状态，其次用持久化数据
-        if (answeredMap[q.id] === 'correct') cls = 'green';
-        else if (answeredMap[q.id] === 'wrong') cls = 'red';
-        else if (answeredIds.has(q.id)) {
-            const rec = wrongRecords[q.id];
+        if (am[q.id] === 'correct') cls = 'green';
+        else if (am[q.id] === 'wrong') cls = 'red';
+        else if (ai.has(q.id)) {
+            const rec = wr[q.id];
             cls = (rec && rec.consecutiveCorrect === 0) ? 'red' : 'green';
         }
-        if (idx === currentQuestionIndex) cls += ' active';
+        if (idx === curIdx) cls += ' active';
         html += `<div class="sidebar-item ${cls}" onclick="jumpToQuestion(${idx})">${idx + 1}</div>`;
     });
     container.innerHTML = html;
@@ -158,3 +186,15 @@ function jumpToQuestion(idx) {
     renderCurrentQuestion();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// 显式挂载到 window
+window.switchSection = switchSection;
+window.renderSectionTabs = renderSectionTabs;
+window.toggleTabsDrawer = toggleTabsDrawer;
+window.updateTabsUI = updateTabsUI;
+window.onFilterChange = onFilterChange;
+window.prevQuestion = prevQuestion;
+window.nextQuestion = nextQuestion;
+window.refreshSidebar = refreshSidebar;
+window.jumpToQuestion = jumpToQuestion;
+

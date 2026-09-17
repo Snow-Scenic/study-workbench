@@ -11,6 +11,7 @@ import socketserver
 import webbrowser
 
 from config import BASE_DIR, PORT
+import config
 from server import MyHandler
 
 # 全局服务器实例，用于关闭
@@ -69,7 +70,7 @@ def run_server():
     try:
         # 创建服务器并设置端口复用（多线程：API 轮询不被长任务阻塞）
         socketserver.ThreadingTCPServer.allow_reuse_address = True
-        httpd = socketserver.ThreadingTCPServer(("", port), MyHandler)
+        httpd = socketserver.ThreadingTCPServer(("127.0.0.1", port), MyHandler)
         httpd.daemon_threads = True
 
         # 注册退出清理

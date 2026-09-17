@@ -1,9 +1,9 @@
 # 学习工作台 · Study Workbench
 
-**简体中文** | [English](README.md)
+**简体中文** | [English](README.en.md)
 
 > 刷题 + 刷课一体的本地学习平台：导入 JSON 题库即可练习，内置雨课堂课程控制台。
-> 纯本地运行，零依赖数据库，开箱即用。**仓库默认不包含任何题库数据。**
+> 本地运行，零依赖数据库，开箱即用。**仓库默认不包含任何题库数据。**
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
@@ -13,7 +13,7 @@
 ## ✨ 功能总览
 
 ### 📚 刷题（题库练习）
-- **多题型**：单选 / 多选 / 不定项 / 判断 / 匹配（点击配对）/ 英语句意翻译
+- **六种题型**：单选 / 多选 / 中文判断 / 英文判断 / 匹配（点击配对）/ 英语单选
 - **错题本**：自动记录错题次数，支持按错误次数筛选复习；连续答对 N 次自动移出
 - **进度持久化**：localStorage 保存做题记录，重启后可继续上次进度
 - **统计面板**：总题数 / 已做 / 本次正确率 / 错题分布一目了然
@@ -30,20 +30,25 @@
 
 ## 🚀 快速开始
 
-### 方式一：下载 EXE（Windows）
-前往 [Releases](../../releases) 页面下载最新附件 `StudyWorkbench.v1.2.1.exe`，双击即可运行。
+### 方式一：下载 EXE（Windows，推荐）
+
+前往 [Releases](../../releases) 下载最新的 `StudyWorkbench.Desktop.v1.3.0.exe`。这是原生桌面版：双击后只显示学习工作台窗口，**不会出现命令行黑框**，体验与“启动学习工作台(无黑框).vbs”一致。
 
 > **⚠️ Windows 使用提示**
 > - **先选好可写目录**：把 exe 移动到独立文件夹（如 `D:\StudyWorkbench\`）再运行——导入的题库存放在同目录的 `question_banks\`，放在 `C:\Program Files\` 或直接在压缩包里运行可能创建失败。
 > - **SmartScreen 警告**：exe 未做代码签名，首次运行请点「更多信息 → 仍要运行」。
-> - **进度保存在浏览器里**（localStorage，按 localhost:8000 来源隔离）：更换浏览器、或端口被占自动跳到 8001 时，将看不到原进度（数据并未丢失）。
-> - **自动退出机制**：关闭所有页面约 15 秒后，后台服务会自动退出并释放端口；期间重新打开页面会自动续命。
+> - **桌面运行环境**：桌面版依赖 Microsoft Edge WebView2 Runtime；Windows 10/11 通常已自带。
+> - **本地数据**：题库、窗口尺寸和练习进度都保留在本机；发布附件不包含任何题库或课程凭据。
+
+如需浏览器模式，可使用 `StudyWorkbench.v1.3.0.exe`；它会打开默认浏览器，适合不使用桌面窗口的场景。
 
 ### 方式二：Python 源码运行
 ```bash
-python main.py      # 需 Python 3.11+
+python -m pip install -r requirements.txt
+python main.py      # 浏览器模式，需 Python 3.11+
 ```
-启动后浏览器自动打开 `http://localhost:8000`（端口占用时自动尝试 8001~8009）。
+
+启动后浏览器自动打开 `http://localhost:8000`（端口占用时自动尝试 8001~8009）。如需从源码启动原生桌面窗口，可双击“启动学习工作台(无黑框).vbs”，或运行 `run_desktop.bat`。
 
 ### 导入题库
 > 仓库与程序默认**不带任何题库**，请使用自己的 JSON 题库文件。
@@ -92,21 +97,25 @@ JSON 题库格式见界面内「📋 查看导入格式说明」，也可以直�
 
 > 💡 把 `examples/demo-bank.json` 复制到 `question_banks/` 文件夹（没有就手动创建），重启程序即可直接体验这份覆盖全部题型的演示库。
 
-### 打包 EXE（可选）
+### 构建 EXE（维护者）
 ```bash
-build.bat           # 需已安装 PyInstaller（pip install pyinstaller）
+python -m pip install pyinstaller
+build.bat
 ```
-产物：`dist\学习工作台.exe`（纯净空壳，不含任何题目数据）。
+
+产物：`dist\StudyWorkbench.v1.3.0.exe`（浏览器模式）与 `dist\StudyWorkbench.Desktop.v1.3.0.exe`（无控制台窗口的桌面原生模式，需 WebView2 Runtime）。两者均为纯净空壳，不含题目数据。
+
+发布 GitHub Releases 前请参阅 [发布清单](docs/RELEASE.md)。
 
 ---
 
 ## 🖥️ 页面预览
 
-**🏠 学习工作台** —— 启动首页，刷题 / 刷课双入口
+**🏠 学习工作台** —— 最近练习、当前题库与常用功能入口
 
 ![学习工作台](docs/screenshots/hub.png)
 
-**✍️ 刷题 · 答题与解析** —— 答错自动滑出解析面板，正确答案高亮
+**✍️ 刷题 · 答题与解析** —— 作答后即时展示正误、正确答案与解析速记
 
 ![刷题与解析](docs/screenshots/quiz-practice.png)
 
@@ -114,34 +123,34 @@ build.bat           # 需已安装 PyInstaller（pip install pyinstaller）
 
 ![详细统计](docs/screenshots/stats.png)
 
-**📌 断点续刷** —— 重启后自动发现历史进度，选择继续或重来
+**📌 错题复习** —— 按错误次数筛选复习范围，集中巩固薄弱题目
 
-![断点续刷](docs/screenshots/progress.png)
+![错题复习范围](docs/screenshots/progress.png)
 
-**🎓 刷课 · 课程配置** —— 参数配置 + 操作指引 + 状态图例
+**🎓 课程控制台** —— 参数配置、状态概览与操作指引
 
 ![刷课配置](docs/screenshots/yuketang-config.png)
-
-**🎮 刷课 · 执行控制台** —— 任务时间线 + 实时进度 + 多线程执行
-
-![执行控制台](docs/screenshots/yuketang-console.png)
 
 ---
 
 ## 🗂️ 项目结构
 
 ```
-├── main.py                # 主入口：启动 HTTP 服务 + 自动打开浏览器
+├── main.py                # 浏览器模式入口：启动 HTTP 服务 + 自动打开浏览器
+├── desktop_app.py         # 原生桌面模式入口（pywebview + WebView2）
 ├── config.py              # 配置常量（端口 8000、目录、雨课堂核心模式）
 ├── server.py              # HTTP 服务：页面路由 / 题库扫描 / 存档 API / 雨课堂 API
 ├── templates/             # 页面外壳（工作台 hub / 刷题 quiz / 刷课 yuketang）
 ├── static/
 │   ├── css/               # base(设计令牌·主题) → components(组件) → pages(页面)
 │   └── js/                # 前端逻辑模块（状态/存储/渲染/答题/导航/统计…）
-├── tests/                 # pytest 后端测试（28 用例）
+├── tests/                 # Python 与 Node.js 回归测试
 ├── examples/              # 示例题库（覆盖全部题型，可复制修改）
-├── CHANGELOG.md           # 版本变更（当前 v1.2）
-└── 学习工作台.spec         # PyInstaller 打包配置
+├── build.bat              # 一键打包浏览器版与无控制台桌面版 EXE
+├── run_desktop.bat        # 源码桌面版启动器
+├── 启动学习工作台(无黑框).vbs # 无命令行窗口的源码桌面版启动器
+├── docs/RELEASE.md        # GitHub Releases 发布清单
+└── CHANGELOG.md           # 版本变更
 ```
 
 > 运行后会生成 `question_banks/`（你的题库存放处）等目录，已在 `.gitignore` 中排除。
@@ -155,8 +164,16 @@ build.bat           # 需已安装 PyInstaller（pip install pyinstaller）
 并接入离线演示核心用于安全调试。
 
 - ⚠️ **暂只支持长江雨课堂**，其他平台接口未适配
-- 当前版本默认运行在 `Mock` 演示模式下（`config.py → CORE_IMPL`），
-  全流程离线模拟、不产生真实网络请求；真实执行核心为后续版本规划
+- 当前 `config.py → CORE_IMPL = "auto"` 智能路由：`classroom_id` 命中演示哨兵
+  （`demo*` / `111` / `test` / `000`）→ 离线 `Mock` 演示核心，全流程离线模拟、
+  不产生真实网络请求；**其他参数将直接连接长江雨课堂在线执行**，请确认你有权
+  操作对应课程后再使用，勿在日志或截图中公开凭据
+- 外部刷课源码（`yuketang-main\`，含 `main.py`）默认放置在 **程序目录的上一级目录**：
+  - 源码运行：仓库父目录，即与 `study-workbench-main\` 同级；
+  - 打包版：`config.py` 以 exe 所在目录为 `BASE_DIR`，查找其**父目录**下的
+    `yuketang-main\`。例如 exe 位于 `D:\StudyWorkbench\app.exe`，默认源码目录是
+    `D:\yuketang-main\`，并非 `D:\StudyWorkbench\yuketang-main\`。
+    也可以用环境变量 `YK_REAL_SRC_DIR` 直接指定源码目录覆盖默认查找。
 
 ## 📄 免责声明
 
@@ -166,7 +183,7 @@ build.bat           # 需已安装 PyInstaller（pip install pyinstaller）
 
 ## 📜 版本
 
-查看 [CHANGELOG.md](CHANGELOG.md)。当前版本 **v1.2.1**（2026-08-24）：刷课真实核心接入。
+查看 [CHANGELOG.md](CHANGELOG.md)。下一版本为 **v1.3.0**，用于发布无控制台桌面版。
 
 ## 📄 许可证
 

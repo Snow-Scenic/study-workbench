@@ -41,8 +41,8 @@ class FakeCore:
 
     def execute(self, params, tasks, emit_task, emit_log, stop_event):
         self.execute_hook(params, tasks, emit_task, emit_log, stop_event)
-        return {"total": len(tasks), "completed": 0, "skipped": 0,
-                "failed": 0, "stopped": sum(1 for t in tasks)}
+        return self.execute_summary or {"total": len(tasks), "completed": 0, "skipped": 0,
+                                        "failed": 0, "stopped": len(tasks)}
 
     def wait_done(self, mgr, states, timeout=5.0):
         pass
@@ -141,7 +141,7 @@ def test_start_from_ready_runs_to_finished():
     assert resp["state"] == "running"
     snap = wait_state(mgr, ("finished",))
     assert seen["task_count"] == 20
-    assert snap["summary"]["total"] == 20
+    assert snap["summary"] == {"total": 20, "completed": 20, "skipped": 0, "failed": 0, "stopped": 0}
     stats = snap["stats"]
     assert stats["total"] == 20 and stats["done"] == 20
 
@@ -240,15 +240,39 @@ def test_reset_allowed_terminal_states_and_clears():
 
 
 def test_reset_denied_while_busy():
-    core = FakeCore(analyze_delay=0.6)
-    mgr = YukeJobManager(core_factory=lambda: core)
-    mgr.analyze(dict(AUTH_OK))
-    with pytest.raises(YukeStateError):
-        mgr.reset()
-    wait_state(mgr, ("ready",))
-    mgr.start()
-    with pytest.raises(YukeStateError):
-        mgr.reset()
+    from threading import Event
+    analyzing, release_analysis = Event(), Event()
+    executing, release_execution = Event(), Event()
+
+    class ControlledCore(FakeCore):
+        def analyze(self, params, emit_log):
+            analyzing.set()
+            assert release_analysis.wait(5)
+            return super().analyze(params, emit_log)
+
+        def execute(self, *args, **kwargs):
+            executing.set()
+            assert release_execution.wait(5)
+            return super().execute(*args, **kwargs)
+
+    mgr = YukeJobManager(core_factory=lambda: ControlledCore())
+    try:
+        mgr.analyze(dict(AUTH_OK))
+        assert analyzing.wait(5)
+        with pytest.raises(YukeStateError):
+            mgr.reset()
+        release_analysis.set()
+        wait_state(mgr, ("ready",))
+        mgr.start()
+        assert executing.wait(5)
+        with pytest.raises(YukeStateError):
+            mgr.reset()
+    finally:
+        release_analysis.set()
+        release_execution.set()
+        if mgr._thread:
+            mgr._thread.join(5)
+    assert not mgr._thread.is_alive()
 
 
 # ---------- 快照：掩码 / 日志截断 / stats ----------

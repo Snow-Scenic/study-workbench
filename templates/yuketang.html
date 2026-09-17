@@ -6,8 +6,21 @@
      当前为离线演示模式（Mock），真实执行暂只支持长江雨课堂。 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>雨课堂刷课控制台</title>
-<link rel="stylesheet" href="/static/css/base.css?v=1.2">
-<link rel="stylesheet" href="/static/css/yuketang.css?v=1.2">
+<link rel="stylesheet" href="/static/css/base.css?v=2.0">
+<link rel="stylesheet" href="/static/css/yuketang.css?v=2.0">
+<script>
+(function(){
+    var t = localStorage.getItem('quiz_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+})();
+function toggleTheme() {
+    var cur = document.documentElement.getAttribute('data-theme') || 'light';
+    var next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('quiz_theme', next);
+    if (window.renderIcons) window.renderIcons();
+}
+</script>
 </head>
 <body data-view="idle">
 <div class="yk-app">
@@ -15,7 +28,7 @@
   <!-- ===== 顶部 HUD ===== -->
   <header class="yk-hud">
     <div class="hud-left">
-      <button class="btn btn-outline btn-sm" onclick="location.href='/'">← 返回工作台</button>
+      <button class="btn btn-outline btn-sm" onclick="location.href='/#home'"><span data-icon="home"></span> 返回工作台</button>
       <span class="yk-seal">雨</span>
       <span class="hud-title">雨课堂 · 刷课控制台<br><em>YUKETANG CONSOLE</em></span>
       <span class="state-badge" id="stateBadge"><i class="dot"></i><b id="stateText">空闲</b></span>
@@ -29,6 +42,9 @@
     </div>
     <div class="hud-right">
       <span class="mock-badge" id="mockBadge">长江雨课堂 · changjiang.yuketang.cn</span>
+      <button class="btn btn-outline btn-sm" onclick="toggleTheme()" title="切换深浅主题">
+        <span data-icon="sun"></span>
+      </button>
     </div>
   </header>
 
@@ -53,11 +69,11 @@
           <label>试看视频数<input id="f_test_video_count" value="5"></label>
           <label>图文停留（秒）<input id="f_richtext_stay_seconds" value="3"></label>
           <label>图文跳过延迟（秒）<input id="f_richtext_skip_delay" value="1"></label>
-          <span class="chk"><input type="checkbox" id="f_use_concurrent" checked><em>启用并发执行</em></span>
-          <span class="chk"><input type="checkbox" id="f_skip_completed" checked><em>跳过已完成</em></span>
-          <span class="chk"><input type="checkbox" id="f_auto_richtext" checked><em>自动处理图文</em></span>
-          <span class="chk"><input type="checkbox" id="f_test_mode"><em>测试模式</em></span>
-          <span class="chk"><input type="checkbox" id="f_debug"><em>调试（快速模拟）</em></span>
+          <label class="chk"><input type="checkbox" id="f_use_concurrent" checked><em>启用并发执行</em></label>
+          <label class="chk"><input type="checkbox" id="f_skip_completed" checked><em>跳过已完成</em></label>
+          <label class="chk"><input type="checkbox" id="f_auto_richtext" checked><em>自动处理图文</em></label>
+          <label class="chk"><input type="checkbox" id="f_test_mode"><em>测试模式</em></label>
+          <label class="chk"><input type="checkbox" id="f_debug"><em>调试（快速模拟）</em></label>
         </div>
       </details>
       <div class="cfg-actions">
@@ -72,8 +88,8 @@
       <div class="side-card">
         <h4>获取配置参数</h4>
         <ol class="side-steps">
-          <li><b>① 课堂参数</b><span>课程页 URL 中提取：<br><code class="g-code">classroom_id = 12345678</code><code class="g-code">sign = your_sign</code></span></li>
-          <li><b>② Cookie 参数</b><span>F12 → Application → Cookies：<br><code class="g-code">csrftoken / sessionid / uv_id</code></span></li>
+          <li><b>课堂参数</b><span>课程页 URL 中提取：<br><code class="g-code">classroom_id = 12345678</code><code class="g-code">sign = your_sign</code></span></li>
+          <li><b>Cookie 参数</b><span>F12 → Application → Cookies：<br><code class="g-code">csrftoken / sessionid / uv_id</code></span></li>
         </ol>
         <p class="g-tip">uv_id 即「学校 ID」；三个值分别填入左侧对应输入框</p>
       </div>
@@ -134,6 +150,7 @@
     </div>
   </footer>
 </div>
-<script src="/static/js/yuketang.js?v=1.2"></script>
+<script src="/static/js/icons.js?v=2.0"></script>
+<script src="/static/js/yuketang.js?v=2.0"></script>
 </body>
 </html>
