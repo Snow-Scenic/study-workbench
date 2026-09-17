@@ -62,6 +62,8 @@ class YukeJobManager:
         with self._lock:
             self._require_state(in_=("running",), msg="只有运行中的任务可以停止")
             self._stop_event.set()
+            if self._job is not None:
+                self._job["_stop_flag"] = True      # 快照 stop_requested 立即可见
         # 异步停止语义：立即返回，不等待线程；execute 收尾后才置 stopped
         return {"ok": True, "state": "running", "stop_requested": True}
 

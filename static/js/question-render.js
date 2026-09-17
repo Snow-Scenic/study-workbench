@@ -8,7 +8,19 @@ function renderCurrentQuestion() {
     document.getElementById('progressText').textContent =
         `共 ${practiceQuestions.length} 题 | 第 ${currentQuestionIndex + 1}/${practiceQuestions.length} 题 | ${q.sectionLabel || ''}`;
 
-    const [typeLabel, typeClass] = TYPE_MAP[q.type] || ['', ''];
+    // Desktop WebView may execute individual script files in isolated lexical
+    // environments.  Read the shared map through `window` instead of relying
+    // on a bare global `const`, and retain a small fallback so rendering a
+    // valid bank can never be blocked by script-scope differences.
+    const typeMap = window.TYPE_MAP || {
+        single: ['单选题', 'single'],
+        judge: ['判断题', 'judge'],
+        multi: ['多选题', 'multi'],
+        TF: ['True/False', 'tf'],
+        en_single: ['Single Choice', 'en_single'],
+        matching: ['Matching', 'matching'],
+    };
+    const [typeLabel, typeClass] = typeMap[q.type] || ['其他题型', ''];
     const answered = answeredMap[q.id];
     const isMulti = q.type === 'multi';
     const selectedAnswers = isMulti ? (answeredMap[q.id + '_selected'] || []) : [];
@@ -57,6 +69,9 @@ function updateProgressUI() {
 /** 匹配题渲染 */
 function renderMatching(q, answered) {
     const state = matchState[q.id] || { selectedLeft: null, selectedRight: null, pairs: [] };
+    const ansPairs = window.normalizeMatchingAns
+        ? window.normalizeMatchingAns(q.ans)
+        : (Array.isArray(q.ans) && q.ans.length && Array.isArray(q.ans[0]) ? q.ans : (q.ans || []).map((r, l) => [l, r]));
     const leftLetters = 'abcdefghijklmnopqrstuvwxyz';
     const rightLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let leftHtml = '', rightHtml = '';
@@ -66,7 +81,7 @@ function renderMatching(q, answered) {
         if (answered) {
             const userPair = state.pairs.find(p => p[0] === idx);
             if (userPair) {
-                const correctPair = q.ans.find(p => p[0] === idx);
+                const correctPair = ansPairs.find(p => p[0] === idx);
                 cls += (correctPair && correctPair[1] === userPair[1]) ? ' correct-pair' : ' wrong-pair';
             }
         } else {
@@ -81,7 +96,7 @@ function renderMatching(q, answered) {
         if (answered) {
             const userPair = state.pairs.find(p => p[1] === idx);
             if (userPair) {
-                const correctPair = q.ans.find(p => p[1] === idx);
+                const correctPair = ansPairs.find(p => p[1] === idx);
                 cls += (correctPair && correctPair[0] === userPair[0]) ? ' correct-pair' : ' wrong-pair';
             }
         } else {
@@ -99,7 +114,7 @@ function renderMatching(q, answered) {
     let feedback = '';
     if (answered) {
         const correct = answered === 'correct';
-        feedback = `<div class="feedback show ${correct ? 'correct-fb' : 'wrong-fb'}">${correct ? '✅ 全部正确！' : '❌ 存在错误配对。'}</div>`;
+        feedback = `<div class="feedback show ${correct ? 'correct-fb' : 'wrong-fb'}">${correct ? (window.UI ? UI.icon('check') : '') + ' 全部正确！' : (window.UI ? UI.icon('x') : '') + ' 存在错误配对。'}</div>`;
     }
     return { bodyHtml, feedback };
 }
@@ -131,20 +146,22 @@ function renderOptions(q, answered, isMulti, selectedAnswers) {
         const ansText = isMulti
             ? (Array.isArray(q.ans) ? q.ans.map(a => String.fromCharCode(65 + a)).join('、') : String.fromCharCode(65 + q.ans))
             : String.fromCharCode(65 + q.ans);
-        feedback = `<div class="feedback show ${correct ? 'correct-fb' : 'wrong-fb'}">${correct ? '✅ 回答正确！' : '❌ 回答错误。'} ${!correct ? `<span class="correct-answer-text">正确答案：${ansText}</span>` : ''}</div>`;
+        feedback = `<div class="feedback show ${correct ? 'correct-fb' : 'wrong-fb'}">${correct ? (window.UI ? UI.icon('check') : '') + ' 回答正确！' : (window.UI ? UI.icon('x') : '') + ' 回答错误。'} ${!correct ? `<span class="correct-answer-text">正确答案：${ansText}</span>` : ''}</div>`;
     }
     return { bodyHtml, feedback };
 }
 
-/** 已作答选项右侧的 ✅/❌ 图标 */
+/** 已作答选项右侧的对勾/叉号矢量图标 */
 function renderResultIcon(q, idx, isMulti, selectedAnswers) {
+    const iconCheck = window.UI ? UI.icon('check') : '✓';
+    const iconX = window.UI ? UI.icon('x') : '✗';
     if (isMulti) {
-        if (Array.isArray(q.ans) && q.ans.includes(idx)) return '<span class="result-icon">✅</span>';
-        if (selectedAnswers.includes(idx)) return '<span class="result-icon">❌</span>';
+        if (Array.isArray(q.ans) && q.ans.includes(idx)) return `<span class="result-icon" style="color:var(--success);">${iconCheck}</span>`;
+        if (selectedAnswers.includes(idx)) return `<span class="result-icon" style="color:var(--danger);">${iconX}</span>`;
         return '';
     }
-    if (idx === q.ans) return '<span class="result-icon">✅</span>';
-    if (answeredMap[q.id + '_chosen'] === idx) return '<span class="result-icon">❌</span>';
+    if (idx === q.ans) return `<span class="result-icon" style="color:var(--success);">${iconCheck}</span>`;
+    if (answeredMap[q.id + '_chosen'] === idx) return `<span class="result-icon" style="color:var(--danger);">${iconX}</span>`;
     return '';
 }
 
@@ -157,16 +174,15 @@ function hasNoteContent(q) {
 function renderCardFooter(q, answered, isMulti) {
     if (answered) {
         const prevBtn = currentQuestionIndex > 0
-            ? '<button class="btn btn-outline btn-sm" onclick="prevQuestion()">⬅️ 上一题</button>'
+            ? `<button class="btn btn-outline btn-sm" onclick="prevQuestion()">${window.UI ? UI.icon('chevron-left') : ''} 上一题</button>`
             : '<span></span>';
         const noteBtn = hasNoteContent(q)
-            ? '<button class="btn btn-outline btn-sm note-trigger' + (noteOpen ? ' open' : '')
-            + '" onclick="toggleNotePanel()">📄 解析<span class="nt-icon">❯</span></button>'
+            ? `<button class="btn btn-outline btn-sm note-trigger${noteOpen ? ' open' : ''}" onclick="toggleNotePanel()">${window.UI ? UI.icon('file-text') : ''} 解析<span class="nt-icon">❯</span></button>`
             : '';
         return '<div class="card-nav">'
             + prevBtn
             + '<div class="card-nav-right">' + noteBtn
-            + '<button class="btn btn-primary btn-sm" onclick="nextQuestion()">下一题 ➡️</button></div></div>';
+            + `<button class="btn btn-primary btn-sm" onclick="nextQuestion()">下一题 ${window.UI ? UI.icon('chevron-right') : ''}</button></div></div>`;
     }
     if (isMulti) {
         return '<div class="multi-submit">'
@@ -195,11 +211,11 @@ function updateNotePanel(q) {
         noteAutoDone = q.id;
     }
     panel.innerHTML =
-        '<div class="np-title">📝 解析</div>' +
-        (q.analysis ? `<div class="np-section"><span class="label">💡 解析</span>${q.analysis}</div>` : '') +
-        (q.memo ? `<div class="np-section"><span class="label">🎯 速记</span>${q.memo}</div>` : '') +
-        (q.q_trans ? `<div class="np-section"><span class="label">📝 翻译</span>${q.q_trans}</div>` : '') +
-        `<button class="btn btn-outline btn-sm np-btn" onclick="toggleNotePanel()">${noteOpen ? '收起 ▲' : '📄 查看解析'}</button>`;
+        `<div class="np-title">${window.UI ? UI.icon('file-text') : ''} 解析与速记</div>` +
+        (q.analysis ? `<div class="np-section"><span class="label">解析</span>${q.analysis}</div>` : '') +
+        (q.memo ? `<div class="np-section"><span class="label">速记</span>${q.memo}</div>` : '') +
+        (q.q_trans ? `<div class="np-section"><span class="label">翻译</span>${q.q_trans}</div>` : '') +
+        `<button class="btn btn-outline btn-sm np-btn" onclick="toggleNotePanel()">${noteOpen ? '收起面板' : (window.UI ? UI.icon('file-text') : '') + ' 查看解析'}</button>`;
     panel.classList.toggle('show', noteOpen);
     syncNoteTrigger();
 }
@@ -213,6 +229,8 @@ function toggleNotePanel() {
 /** 收起并清空解析面板（切分类 / 重新开始时调用） */
 function hideNotePanel() {
     noteOpen = false;
+    notePanelFor = '';
+    noteAutoDone = '';
     const panel = document.getElementById('notePanel');
     if (panel) { panel.classList.remove('show'); panel.innerHTML = ''; }
 }
@@ -222,3 +240,11 @@ function syncNoteTrigger() {
     const btn = document.querySelector('.question-card .note-trigger');
     if (btn) btn.classList.toggle('open', noteOpen);
 }
+
+// 显式挂载到 window
+window.renderCurrentQuestion = renderCurrentQuestion;
+window.updateProgressUI = updateProgressUI;
+window.updateNotePanel = updateNotePanel;
+window.toggleNotePanel = toggleNotePanel;
+window.hideNotePanel = hideNotePanel;
+window.syncNoteTrigger = syncNoteTrigger;

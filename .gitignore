@@ -20,5 +20,11 @@ dist/
 # 用户题库数据（不入库）
 question_banks/
 
+# 本机窗口状态（保留在程序约定路径，不入库）
+.window_state.json
+# 本机桌面解释器配置（不入库）
+/desktop-python.txt
+
 # PyInstaller 自动生成的 spec（由 build.bat 参数重建）
 StudyWorkbench.spec
+StudyWorkbench.*.spec

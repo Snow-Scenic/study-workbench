@@ -7,7 +7,10 @@ import urllib.request
 import pytest
 
 import config
-config.CORE_IMPL = "mock"        # 集成测试钉住演示核心，禁止真实网络
+@pytest.fixture(autouse=True)
+def mock_core_only(monkeypatch):
+    # 每条测试独立设置并恢复，避免模块导入污染其他测试。
+    monkeypatch.setattr(config, 'CORE_IMPL', 'mock')
 
 from server import MyHandler
 
@@ -108,9 +111,9 @@ def test_full_flow_analyze_ready_start_finished(base_url):
     status, body = request(base_url + "/api/yuketang/analyze", dict(AUTH_OK))
     assert status == 202 and body["state"] == "analyzing"
 
-    # analyzing 期间再次 analyze → 409（竞态下可能已 ready，则跳过该断言）
+    # analyzing 和 ready 都禁止重复分析。
     st2, _ = request(base_url + "/api/yuketang/analyze", dict(AUTH_OK))
-    assert st2 in (202, 409)
+    assert st2 == 409
 
     snap = wait_state(base_url, ("ready",))
     assert 10 <= len(snap["tasks"]) <= 20
@@ -125,7 +128,7 @@ def test_full_flow_analyze_ready_start_finished(base_url):
 
     # running 中再 start → 409
     st3, _ = request(base_url + "/api/yuketang/start", {})
-    assert st3 in (202, 409)            # 竞态容忍
+    assert st3 == 409                  # running 或 finished 均禁止再次 start
 
     snap = wait_state(base_url, ("finished",), timeout=90)
     stats = snap["stats"]
@@ -165,7 +168,7 @@ def test_stop_async_semantics_returns_running_then_stopped(base_url):
     assert body == {"ok": True, "state": "running", "stop_requested": True}
 
     snap = wait_state(base_url, ("stopped",), timeout=90)
-    assert snap["stop_requested"] is False or True   # 字段存在即可
+    assert snap["stop_requested"] is True   # 保留停止事实，reset/新任务才清零
     assert snap["summary"]["stopped"] >= 1
     pend = [t for t in snap["tasks"] if t["status"] == "pending"]
     stopped = [t for t in snap["tasks"] if t["status"] == "stopped"]

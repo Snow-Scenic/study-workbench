@@ -2,7 +2,7 @@
 'use strict';
 
 const FORMAT_GUIDE_HTML = `
-<h2>📋 题库导入格式说明</h2>
+<h2>题库导入格式说明</h2>
 <p class="muted fg-intro">题库为 UTF-8 编码的 .json 文件。顶层结构：</p>
 <pre>{
   "meta": { "name": "我的题库", "version": "1.0" },
@@ -81,3 +81,8 @@ document.head.insertAdjacentHTML('beforeend',
     '.fg-example pre,.fg-panel > pre{background:var(--bg);border:1px solid var(--border);' +
     'border-radius:var(--radius-sm);padding:8px 10px;font-size:.74rem;overflow-x:auto;margin:6px 0 12px}' +
     '</style>');
+
+window.openFormatGuide = openFormatGuide;
+window.closeFormatGuide = closeFormatGuide;
+window.downloadTemplate = downloadTemplate;
+

@@ -28,3 +28,8 @@ function submitMulti(qId) {
     finishAnswer(qId, equal);
     renderCurrentQuestion();
 }
+
+// 显式挂载到 window
+window.selectOption = selectOption;
+window.submitMulti = submitMulti;
+

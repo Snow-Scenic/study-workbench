@@ -106,6 +106,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
         self.send_response(code)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Cache-Control', 'no-cache')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -162,10 +163,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
         elif path == '/scan':
             files = _scan_question_banks()
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(files, ensure_ascii=False).encode('utf-8'))
+            self._send_json(200, files)
 
         elif path.startswith('/banks/'):
             fname = path[7:]
@@ -173,10 +171,13 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             if fpath and fname.endswith('.json'):
                 with open(fpath, 'r', encoding='utf-8') as f:
                     content = f.read()
+                body = content.encode('utf-8')
                 self.send_response(200)
-                self.send_header('Content-type', 'application/json')
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.send_header('Cache-Control', 'no-cache')
+                self.send_header('Content-Length', str(len(body)))
                 self.end_headers()
-                self.wfile.write(content.encode('utf-8'))
+                self.wfile.write(body)
             else:
                 self.send_error(404)
 

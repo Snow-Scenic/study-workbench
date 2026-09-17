@@ -99,8 +99,8 @@ async function doReset() {
         lastTasksKey = '';            // 清空时间线缓存，下一门课从头渲染
         renderLogs._k = '';
         $('timeline').innerHTML = '';
-        $('curBody').innerHTML = '<p class="muted">暂无执行中的任务</p>';
-        $('workersBox').innerHTML = '<p class="muted">空闲 · 无执行线程</p>';
+        $('curBody').innerHTML = emptyConsoleState('暂无执行中的任务', '分析课程后将在这里显示当前进度');
+        $('workersBox').innerHTML = emptyConsoleState('暂无执行线程', '任务启动后将显示线程状态');
         $('terminalBanner').hidden = true;
         renderNow();
     }
@@ -108,11 +108,25 @@ async function doReset() {
 
 function flashCfg(msg) { const el = $('cfgError'); if (el) el.textContent = msg || ''; }
 
+function emptyConsoleState(title, hint) {
+    return `<div class="yk-empty-state">
+        <span class="yk-empty-state-dot" aria-hidden="true"></span>
+        <span class="yk-empty-state-title">${esc(title)}</span>
+        <small>${esc(hint)}</small>
+    </div>`;
+}
+
 // ---------------- 轮询 ----------------
 
 function startPolling() {
     if (pollTimer) return;
     poll();
+}
+function stopPolling() {
+    if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+    }
 }
 function poll() {
     pollTimer = setTimeout(async () => {
@@ -225,17 +239,68 @@ function renderExec(snap) {
              <i class="heart" title="心跳"></i>
              <div class="cur-bar"><i style="width:${cur.pct}%"></i></div>
              <div class="cur-row"><span class="cur-pct">${cur.pct}%</span><span class="muted">进行中</span></div>`;
+    } else if (snap.state === 'ready') {
+        const tasks = snap.tasks || [];
+        const vCount = tasks.filter(t => t.kind === 'video').length;
+        const rCount = tasks.filter(t => t.kind === 'richtext').length;
+        const p = snap.params_masked || {};
+        const spd = p.video_speed || '1.5';
+        const wkr = p.max_workers || '3';
+        $('curBody').innerHTML = `
+            <div class="yk-ready-card">
+                <div class="yk-ready-badge">
+                    <span class="pulse-dot"></span>
+                    <span>任务就绪待命 · READY</span>
+                </div>
+                <h4 class="yk-ready-title">共解析到 <b>${tasks.length}</b> 个章节课件任务</h4>
+                <div class="yk-ready-grid">
+                    <div class="yk-ready-stat">
+                        <span class="num">${vCount}</span>
+                        <span class="lbl">视频课件</span>
+                    </div>
+                    <div class="yk-ready-stat">
+                        <span class="num">${rCount}</span>
+                        <span class="lbl">图文课件</span>
+                    </div>
+                    <div class="yk-ready-stat">
+                        <span class="num">${spd}x</span>
+                        <span class="lbl">播放倍速</span>
+                    </div>
+                    <div class="yk-ready-stat">
+                        <span class="num">${wkr}</span>
+                        <span class="lbl">并发线程</span>
+                    </div>
+                </div>
+                <div class="yk-ready-prompt">
+                    <span class="prompt-icon">💡</span>
+                    <span>课件已在左侧时间线排队就绪，点击下方<b>【▶ 开始执行】</b>启动全自动挂机学习。</span>
+                </div>
+            </div>`;
     } else {
-        $('curBody').innerHTML = '<p class="muted">暂无执行中的任务</p>';
+        $('curBody').innerHTML = emptyConsoleState('暂无执行中的任务', '分析课程后将在这里显示当前进度');
     }
+
     const ws = snap.workers || [];
-    $('workersBox').innerHTML = ws.length
-        ? ws.map(w =>
+    if (ws.length) {
+        $('workersBox').innerHTML = ws.map(w =>
             `<div class="worker-row">
                 <span>${esc(w.name)}</span><span class="w-pct">${w.pct}%</span>
                 <div class="w-bar"><i style="width:${w.pct}%"></i></div>
-             </div>`).join('')
-        : '<p class="muted">空闲 · 无执行线程</p>';
+             </div>`).join('');
+    } else if (snap.state === 'ready') {
+        const p = snap.params_masked || {};
+        const wkr = p.max_workers || '3';
+        $('workersBox').innerHTML = `
+            <div class="yk-ready-workers">
+                <div class="worker-status-line">
+                    <span class="worker-status-tag">待启动</span>
+                    <span>后台线程池已待命（最大并发: ${wkr} 条 Worker）</span>
+                </div>
+                <p class="worker-status-desc">点击「开始执行」后，工作线程将并行处理视频播放与心跳交互，并在此实时刷新各任务进度。</p>
+            </div>`;
+    } else {
+        $('workersBox').innerHTML = emptyConsoleState('暂无执行线程', '任务启动后将显示线程状态');
+    }
 }
 
 function pickCurrent(snap) {
@@ -250,8 +315,10 @@ function pickCurrent(snap) {
 function renderActions(snap) {
     const box = $('execActions');
     let html = '';
-    if (snap.state === 'ready') html += '<button class="btn btn-primary" onclick="doStart()">▶ 开始执行</button>'
-        + '<button class="btn btn-outline" onclick="doReset()">← 返回配置（换课 / 改参数）</button>';
+    if (snap.state === 'ready') {
+        html += '<button class="btn btn-primary yk-btn-start" onclick="doStart()">▶ 开始执行自动学习</button>'
+              + '<button class="btn btn-outline" onclick="doReset()">← 返回配置（换课 / 改参数）</button>';
+    }
     if (snap.state === 'running') {
         html += stopRequested
             ? '<button class="btn stop" disabled>⏹ 正在停止…</button>'
@@ -347,3 +414,11 @@ window.addEventListener('load', () => {
         }, 1500);
     }
 });
+
+// 显式挂载到 window
+window.renderNow = renderNow;
+window.startPolling = startPolling;
+window.stopPolling = stopPolling;
+window.fillDemoParams = fillDemoParams;
+window.loadRunParams = loadRunParams;
+window.saveRunParams = saveRunParams;
