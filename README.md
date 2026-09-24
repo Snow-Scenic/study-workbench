@@ -1,187 +1,123 @@
 # 学习工作台 · Study Workbench
 
-**简体中文** | [English](README.en.md)
+**简体中文** · [English](README.en.md)
 
-> 刷题 + 刷课一体的本地学习平台：导入 JSON 题库即可练习，内置雨课堂课程控制台。
-> 本地运行，零依赖数据库，开箱即用。**仓库默认不包含任何题库数据。**
+面向雨课堂课程进度管理的 Windows 桌面工具。已验证可使用真实账号接入「长江雨课堂」与「南京农业大学雨课堂」，完成课程结构分析、任务查看与进度执行；另附带本地题库练习、错题复习和统计功能。
 
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+> **真实接入平台：长江雨课堂、南京农业大学雨课堂。** 请在程序中选择与你账号所属平台一致的选项；两个平台的参数与 Cookie 获取位置不同，以页面内提示为准。
 
----
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D4?logo=windows&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-2ea44f)
 
-## ✨ 功能总览
+![雨课堂课程控制台参数配置](docs/screenshots/yuketang-config.png)
 
-### 📚 刷题（题库练习）
-- **六种题型**：单选 / 多选 / 中文判断 / 英文判断 / 匹配（点击配对）/ 英语单选
-- **错题本**：自动记录错题次数，支持按错误次数筛选复习；连续答对 N 次自动移出
-- **进度持久化**：localStorage 保存做题记录，重启后可继续上次进度
-- **统计面板**：总题数 / 已做 / 本次正确率 / 错题分布一目了然
-- **方向感知切题动画、深浅双主题（宣纸 × 墨夜）、快捷键作答（数字键选option、←→翻页）**
-- **解析面板**：答错自动滑出解析/速记/翻译；答对手动展开
+## 功能一览
 
-### 🎓 刷课（雨课堂控制台）
-- 课程参数配置 → 分析课程结构 → 生成任务时间线 → 多线程执行
-- 实时进度条、任务状态图例（执行中/完成/跳过/停止/失败）、系统日志
-- **双模式**：填入演示参数即离线模拟体验；真实模式可选择长江雨课堂或南京农业大学雨课堂
-- 真实核心已内置，适配平台域名、进度响应与学校 ID 的兼容差异
+| 模块 | 能力 |
+| --- | --- |
+| 雨课堂课程控制台 | 已验证真实接入长江雨课堂、南京农业大学雨课堂；课程结构分析、任务时间线、进度状态与本地日志；支持离线演示 |
+| 题库练习 | 单选、多选、判断、英语单选、匹配题；键盘作答与解析面板 |
+| 错题复习 | 自动累计错误次数，按范围筛选；连续答对后可自动移出 |
+| 数据统计 | 覆盖率、正确率、题型掌握度与错题分布 |
+| 本地存档 | 导入题库、做题记录、界面偏好和运行参数可在下次启动恢复 |
 
----
+## 快速开始
 
-## 🚀 快速开始
+### Windows EXE（推荐）
 
-### 方式一：下载 EXE（Windows，推荐）
+从 [Releases](../../releases) 下载 `StudyWorkbench.Desktop.v1.3.0.exe`，放到单独的可写目录后双击运行。
 
-前往 [Releases](../../releases) 下载最新的 `StudyWorkbench.Desktop.v1.3.0.exe`。这是原生桌面版：双击后只显示学习工作台窗口，**不会出现命令行黑框**，体验与“启动学习工作台(无黑框).vbs”一致。
+- 只显示应用窗口，不会出现命令行黑框
+- 无需安装 Python；需要 Microsoft Edge WebView2 Runtime（Windows 10/11 通常已包含）
+- 首次启动会在 EXE 同目录创建 `study_workbench_data.json` 和 `question_banks\`，用于保存本地数据
+- EXE 未签名时，Windows 可能显示 SmartScreen 提示；请仅从可信 Release 下载并核对校验值
 
-> **⚠️ Windows 使用提示**
-> - **先选好可写目录**：把 exe 移动到独立文件夹（如 `D:\StudyWorkbench\`）再运行——导入的题库存放在同目录的 `question_banks\`，放在 `C:\Program Files\` 或直接在压缩包里运行可能创建失败。
-> - **SmartScreen 警告**：exe 未做代码签名，首次运行请点「更多信息 → 仍要运行」。
-> - **桌面运行环境**：桌面版依赖 Microsoft Edge WebView2 Runtime；Windows 10/11 通常已自带。
-> - **本地数据**：首次启动会在 exe 同目录创建 `study_workbench_data.json`，保存题库选择、练习历史、界面偏好和课程运行参数；导入的题库保存在同目录 `question_banks\`。下次直接运行即可恢复。
-> - **凭据保护**：Cookie/会话参数默认只在本次运行内存中使用。只有在课程页主动勾选「记住登录凭据」才会明文写入上述 JSON；请只在自己的受保护电脑上开启，切勿把该文件分享或上传。
+> 不要在压缩包内或 `C:\Program Files\` 下直接运行；这类目录可能无法创建本地数据文件。
 
-### 方式二：Python 源码运行
-```bash
+### 使用雨课堂课程控制台
+
+1. 打开应用中的「课程控制台」，在「平台」中选择「长江雨课堂」或「南京农业大学雨课堂」。
+2. 按右侧的对应平台提示，从课程页面和浏览器 Cookie 中填写课程参数；两个平台的填写内容不能混用。
+3. 点击「分析课程结构」，确认课程任务后再开始执行。任务状态和运行日志会显示在控制台内。
+
+> `demo*`、`111`、`test`、`000` 等演示课堂 ID 只会执行离线模拟；要连接真实课程，请填写实际课程参数。请仅操作自己有权限访问的课程，并遵守学校和平台规则。
+
+### 源码运行
+
+```powershell
 python -m pip install -r requirements.txt
-run_desktop.bat     # 桌面窗口模式，需 Python 3.11+
+run_desktop.bat
 ```
 
-推荐双击“启动学习工作台(无黑框).vbs”启动源码桌面版；也可运行 `run_desktop.bat`。桌面窗口内部通过本地回环服务加载界面，端口占用时会自动尝试 8001~8009，不会打开外部浏览器。
+也可以双击 [启动学习工作台(无黑框).vbs](启动学习工作台(无黑框).vbs)。启动器按以下顺序选择 Python：`STUDY_WORKBENCH_PYTHON` → `desktop-python.txt` → `.venv\Scripts\python.exe` → PATH。使用 `run_desktop.bat --check` 可只检查解释器和依赖。
 
-桌面启动器统一按以下顺序选择 Python：`STUDY_WORKBENCH_PYTHON` 环境变量 → `desktop-python.txt` 第一行 → `.venv\Scripts\python.exe` → PATH。请确保选中的解释器安装了 `requirements.txt` 中的依赖；`desktop-python.txt` 填完整路径、不带引号，仅保留本机。可运行 `run_desktop.bat --check` 检查解释器与依赖（不启动窗口）。
+## 附加功能：导入题库
 
-### 导入题库
-> 仓库与程序默认**不带任何题库**，请使用自己的 JSON 题库文件。
-
-1. 在题库选择页点「📥 导入题库」，选择 JSON 题库文件
-2. 导入成功后自动存档副本到 `question_banks/` —— **下次启动免重复导入**，做题进度自动恢复
-3. 也可以直接把 JSON 放进 `question_banks/` 目录后刷新
-
-JSON 题库格式见界面内「📋 查看导入格式说明」，也可以直接参照仓库自带的测试题 **[`examples/demo-bank.json`](examples/demo-bank.json)** —— 它覆盖了全部六种题型与可选字段，复制修改即可变成你自己的题库。
-
----
-
-## 📋 题库格式
-
-题库为 UTF-8 编码的 `.json` 文件，顶层结构：
+1. 打开「题库管理」，点击「导入题库」并选择 UTF-8 JSON 文件。
+2. 程序会将题库副本保存至 `question_banks\`；下次启动无需重复导入。
+3. 可从 [`examples/demo-bank.json`](examples/demo-bank.json) 开始。它覆盖全部支持题型，适合复制后改成自己的题库。
 
 ```json
 {
   "meta": { "name": "我的题库", "version": "1.0" },
   "categories": {
-    "分类key": { "label": "📖 分类显示名", "questions": [ "…题目…" ] }
+    "chapter-1": { "label": "第一章", "questions": [] }
   }
 }
 ```
 
-### 六种题型
+支持的 `type`：`single`、`multi`、`judge`、`TF`、`en_single`、`matching`。每题 `id` 必须全库唯一；可选字段 `analysis`、`memo`、`q_trans` 分别用于解析、速记和翻译。
 
-| type 关键字 | 题型 | 题目必填字段 | ans 格式 |
-|---|---|---|---|
-| `single` | 单选题 | id, q, opts[] | 正确项下标（从 0 开始），如 `1` |
-| `judge` | 判断题 | id, q, opts[]（两项） | `0` 或 `1`（如 ["正确","错误"]） |
-| `TF` | True/False（英文判断） | 同 judge | 同 judge |
-| `multi` | 多选题 | id, q, opts[] | 下标数组，如 `[0,2]` |
-| `en_single` | 英语单选 | 同 single | 同 single |
-| `matching` | 匹配题 | id, q, left[], right[], ans[] | `ans[i]` = 左第 i 项对应的右项下标 |
+## 题库练习界面
 
-**所有题型通用可选字段**：
+![作答与解析界面](docs/screenshots/quiz-practice.png)
 
-| 字段 | 用途 |
-|---|---|
-| `analysis` | 解析——答错自动弹出，答对可手动查看 |
-| `memo` | 速记口诀 |
-| `q_trans` | 中文翻译（英语题目适用） |
+## 本地数据与隐私
 
-**公共规则**：`id` 全库唯一；缺必填字段的题目会被跳过；某分类无有效题目则整类跳过。
+- 默认不保存 Cookie、会话 ID 等认证字段；它们只在当前运行中使用。
+- 只有手动勾选「记住登录凭据」后，认证字段才会以明文写入 `study_workbench_data.json`。仅应在受保护的个人电脑启用，切勿提交、分享或上传该文件。
+- `question_banks/`、`study_workbench_data.json`、日志、构建产物和本机 Python 配置均被 `.gitignore` 排除。
 
-> 💡 把 `examples/demo-bank.json` 复制到 `question_banks/` 文件夹（没有就手动创建），重启程序即可直接体验这份覆盖全部题型的演示库。
+## 课程控制台说明
 
-### 构建 EXE（维护者）
-```bash
+课程控制台改造自 [Gary-666/yuketang](https://github.com/Gary-666/yuketang) 的命令行项目，并在本项目中内置运行所需的客户端逻辑；源码运行和 Release EXE 都不需要额外下载 `main.py` 或配置 `.env`。
+
+- 演示课堂 ID（如 `demo*`、`111`、`test`、`000`）始终走离线模拟，不会发起真实请求。
+- 非演示课堂会按所选平台以真实账号参数连接；认证信息只会发往这两个受支持的平台。
+- 请自行确认拥有课程访问权限，并遵守学校和平台规则。请勿在截图、Issue 或日志中公开 Cookie。
+
+## 开发说明与已知限制
+
+本项目使用 **Vibe Coding** 辅助开发与迭代。虽然已包含自动化测试，但不同 Windows、WebView2、网络环境及课程平台接口可能存在兼容问题，也仍可能出现功能或界面 Bug。
+
+遇到问题时，建议在 [Issues](../../issues) 中说明复现步骤、应用版本、系统版本和不含凭据的错误截图；请不要上传 Cookie、会话 ID、题库或个人课程信息。
+
+## 开发与发布
+
+```powershell
 python -m pip install pyinstaller
 build.bat
 ```
 
-产物：`dist\StudyWorkbench.Desktop.v1.3.0.exe`（无控制台窗口的桌面原生模式，需 WebView2 Runtime）。它是纯净空壳，不含题目数据。
+产物为 `dist\StudyWorkbench.Desktop.v1.3.0.exe`。发布前请按 [Release 发布清单](docs/RELEASE.md) 在独立可写目录中验证 EXE、导入演示题库并检查附件不含本地数据。
 
-发布 GitHub Releases 前请参阅 [发布清单](docs/RELEASE.md)。
+## 项目结构
 
----
-
-## 🖥️ 页面预览
-
-**🏠 学习工作台** —— 最近练习、当前题库与常用功能入口
-
-![学习工作台](docs/screenshots/hub.png)
-
-**✍️ 刷题 · 答题与解析** —— 作答后即时展示正误、正确答案与解析速记
-
-![刷题与解析](docs/screenshots/quiz-practice.png)
-
-**📊 详细统计** —— 正确率 / 错题分布一目了然
-
-![详细统计](docs/screenshots/stats.png)
-
-**📌 错题复习** —— 按错误次数筛选复习范围，集中巩固薄弱题目
-
-![错题复习范围](docs/screenshots/progress.png)
-
-**🎓 课程控制台** —— 参数配置、状态概览与操作指引
-
-![刷课配置](docs/screenshots/yuketang-config.png)
-
----
-
-## 🗂️ 项目结构
-
-```
-├── desktop_app.py         # 原生桌面模式入口（pywebview + WebView2）
-├── config.py              # 配置常量（端口 8000、目录、雨课堂核心模式）
-├── server.py              # HTTP 服务：页面路由 / 题库扫描 / 存档 API / 雨课堂 API
-├── templates/             # 页面外壳（工作台 hub / 刷题 quiz / 刷课 yuketang）
-├── static/
-│   ├── css/               # base(设计令牌·主题) → components(组件) → pages(页面)
-│   └── js/                # 前端逻辑模块（状态/存储/渲染/答题/导航/统计…）
-├── tests/                 # Python 与 Node.js 回归测试
-├── examples/              # 示例题库（覆盖全部题型，可复制修改）
-├── build.bat              # 一键打包无控制台桌面版 EXE
-├── run_desktop.bat        # 源码桌面版启动器
-├── 启动学习工作台(无黑框).vbs # 无命令行窗口的源码桌面版启动器
-├── docs/RELEASE.md        # GitHub Releases 发布清单
-└── CHANGELOG.md           # 版本变更
+```text
+├── desktop_app.py          # Windows 桌面入口（pywebview + WebView2）
+├── server.py               # 本地 HTTP 服务与 API
+├── portable_state.py       # EXE 同目录的便携数据读写
+├── yuketang_core.py        # 课程任务状态与演示核心
+├── yuketang_adapter.py     # 平台适配层
+├── yuketang_native.py      # 内置课程 HTTP 客户端
+├── templates/              # 题库工作台与课程控制台页面
+├── static/                 # 样式与前端交互脚本
+├── examples/               # 公开演示题库
+├── tests/                  # 回归测试
+└── docs/                   # 截图与 Release 说明
 ```
 
-> 运行后会生成 `question_banks/`（你的题库存放处）等目录，已在 `.gitignore` 中排除。
+## 许可证
 
----
-
-## 🎓 刷课模块来源与说明
-
-刷课（雨课堂控制台）模块基于开源项目 **[Gary-666/yuketang](https://github.com/Gary-666/yuketang)** 修改集成：
-重构了其命令行交互为 Web 控制台（参数配置 → 任务时间线 → 多线程执行 → 系统日志），
-并接入离线演示核心用于安全调试。
-
-- 支持的真实平台档案：**长江雨课堂**、**南京农业大学雨课堂**。请在课程控制台的「平台」下拉框中选择；应用不会向任意自定义域名发送认证信息
-- 当前 `config.py → CORE_IMPL = "auto"` 智能路由：`classroom_id` 命中演示哨兵
-  （`demo*` / `111` / `test` / `000`）→ 离线 `Mock` 演示核心，全流程离线模拟、
-  不产生真实网络请求；**其他参数将连接所选平台在线执行**，请确认你有权
-  操作对应课程后再使用，勿在日志或截图中公开凭据
-- 真实核心已内嵌在项目中，源码运行和 Release EXE 都**不需要**额外下载、放置
-  `yuketang-main\main.py` 或设置 `YK_REAL_SRC_DIR`。本项目只在运行时使用当前表单中
-  的认证字段，不读取 `.env`，也不保存这些字段。
-
-## 📄 免责声明
-
-- 本项目仅为**个人学习辅助工具**，本身不包含、不分发任何试题、课程或教学资源
-- 你通过「导入题库」等功能添加的一切内容，来源与版权合法性由你本人负责
-- 请遵守所在学校 / 平台的服务条款，因使用本项目产生的任何责任与开发者无关
-
-## 📜 版本
-
-当前源码版本为 **v1.3.0**，包含无控制台桌面入口。变更见 [CHANGELOG.md](CHANGELOG.md)；源码上传范围与 EXE 构建、验收步骤见 [发布清单](docs/RELEASE.md)。
-
-## 📄 许可证
-
-本项目基于 [MIT License](LICENSE) 开源。
+本项目基于 [MIT License](LICENSE) 发布。导入的题库、课程资料及账号数据由使用者自行负责其来源、权限和合规性。
