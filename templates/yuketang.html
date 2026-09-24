@@ -2,12 +2,22 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<!-- 刷课（雨课堂控制台）模块基于 https://github.com/Gary-666/yuketang 修改集成，
-     当前为离线演示模式（Mock），真实执行暂只支持长江雨课堂。 -->
+<!-- 雨课堂控制台基于 https://github.com/Gary-666/yuketang 修改集成。
+     演示参数始终走离线 Mock；真实模式仅允许内置的平台档案。 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>雨课堂刷课控制台</title>
 <link rel="stylesheet" href="/static/css/base.css?v=2.0">
 <link rel="stylesheet" href="/static/css/yuketang.css?v=2.0">
+  <script>
+    window.__PORTABLE_STATE__ = {{PORTABLE_STATE_JSON}};
+    (function (state) {
+      const storage = state && state.storage;
+      if (!storage || typeof storage !== 'object') return;
+      Object.keys(storage).forEach((key) => {
+        try { localStorage.setItem(key, String(storage[key])); } catch (e) {}
+      });
+    })(window.__PORTABLE_STATE__);
+  </script>
 <script>
 (function(){
     var t = localStorage.getItem('quiz_theme') || 'light';
@@ -52,14 +62,16 @@ function toggleTheme() {
   <section class="yk-config" id="configPanel">
     <div class="cfg-card">
       <h2>课程接入参数</h2>
-      <p class="muted">真实模式将连接长江雨课堂执行；认证字段仅存内存，不落盘。填入「演示参数」可离线体验全流程。</p>
+      <p class="muted">真实模式连接所选雨课堂平台；认证字段默认只存内存。填入「演示参数」可离线体验全流程。</p>
       <div class="cfg-grid cfg-auth">
+        <label>平台<select id="f_platform_host" onchange="updatePlatformGuide()"><option value="changjiang.yuketang.cn">长江雨课堂</option><option value="njauyjs.yuketang.cn">南京农业大学雨课堂</option></select></label>
         <label>课堂 ID<input id="f_classroom_id" placeholder="如 12345678"></label>
         <label>签名 SIGN<input id="f_sign" placeholder="URL 中的 sign 参数"></label>
         <label>学校 ID<input id="f_university_id" placeholder="学校 ID / uv_id"></label>
         <label>CSRF 令牌<input id="f_csrf_token" type="password" placeholder="Cookie: csrftoken"></label>
         <label>会话 ID<input id="f_session_id" type="password" placeholder="Cookie: sessionid"></label>
       </div>
+      <label class="cfg-credential-option"><input type="checkbox" id="f_remember_auth"><span><b>记住登录凭据</b><small>将课堂与 Cookie 参数明文写入程序同目录的 study_workbench_data.json；仅建议在个人电脑开启。</small></span></label>
       <details class="run-params">
         <summary>运行参数（对应原脚本 .env 配置）</summary>
         <div class="cfg-grid">
@@ -88,10 +100,10 @@ function toggleTheme() {
       <div class="side-card">
         <h4>获取配置参数</h4>
         <ol class="side-steps">
-          <li><b>课堂参数</b><span>课程页 URL 中提取：<br><code class="g-code">classroom_id = 12345678</code><code class="g-code">sign = your_sign</code></span></li>
-          <li><b>Cookie 参数</b><span>F12 → Application → Cookies：<br><code class="g-code">csrftoken / sessionid / uv_id</code></span></li>
+          <li><b id="guideCourseTitle">课堂参数</b><span id="guideCourse">课程目录页 URL 中提取：<br><code class="g-code">classroom_id = 12345678</code><code class="g-code">sign = your_sign</code></span></li>
+          <li><b id="guideCookieTitle">Cookie 参数</b><span id="guideCookie">F12 → Application → Cookies：<br><code class="g-code">csrftoken / sessionid / uv_id</code></span></li>
         </ol>
-        <p class="g-tip">uv_id 即「学校 ID」；三个值分别填入左侧对应输入框</p>
+        <p class="g-tip" id="guideTip">uv_id 即「学校 ID」；三个值分别填入左侧对应输入框</p>
       </div>
       <div class="side-card">
         <h4>工作原理</h4>
@@ -104,7 +116,7 @@ function toggleTheme() {
         </ul>
       </div>
       <div class="side-card demo-note">
-        双模式：演示参数＝离线体验；真实参数＝连接长江雨课堂。
+        双模式：演示参数＝离线体验；真实参数＝连接所选平台。
       </div>
     </aside>
   </section>
@@ -151,6 +163,7 @@ function toggleTheme() {
   </footer>
 </div>
 <script src="/static/js/icons.js?v=2.0"></script>
-<script src="/static/js/yuketang.js?v=2.0"></script>
+  <script src="/static/js/storage.js?v=2.0"></script>
+  <script src="/static/js/yuketang.js?v=2.0"></script>
 </body>
 </html>

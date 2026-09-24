@@ -372,8 +372,3 @@ html.theme-transitioning *::after {
     user-select: text;
 }
 
-/* 桌面模式下隐藏浏览器相关提示 */
-.desktop-mode .browser-only {
-    display: none !important;
-}
-

@@ -3,13 +3,32 @@
 
 const $ = (id) => document.getElementById(id);
 
-// 运行参数白名单：唯一允许进 localStorage 的键；认证 5 字段绝不存储
-const RUN_KEYS = ['video_speed', 'heartbeat_interval', 'max_workers', 'skip_completed',
+// 运行参数始终可恢复；认证字段仅在用户显式勾选“记住登录凭据”后持久化。
+const RUN_KEYS = ['platform_host', 'video_speed', 'heartbeat_interval', 'max_workers', 'skip_completed',
     'test_mode', 'test_video_count', 'use_concurrent', 'auto_richtext',
     'richtext_stay_seconds', 'richtext_skip_delay', 'debug'];
 const AUTH_KEYS = ['classroom_id', 'sign', 'university_id', 'csrf_token', 'session_id'];
 const STORE_KEY = 'yk_run_params';
+const AUTH_STORE_KEY = 'yk_auth_params';
+const REMEMBER_AUTH_KEY = 'yk_remember_auth';
 const BOOL_RUN = new Set(['skip_completed', 'test_mode', 'use_concurrent', 'auto_richtext', 'debug']);
+
+// 两个平台都填写同一组字段，但课程 URL、Cookie 所在域名及 sign 的取得方式不同。
+// 内容仅作本机界面提示，不会把任何值写入日志或 localStorage。
+const PLATFORM_GUIDES = {
+    'changjiang.yuketang.cn': {
+        label: '长江雨课堂',
+        course: '课程目录页 URL 中提取：<br><code class="g-code">/pro/livecast/&lt;课堂 ID&gt;?sign=&lt;SIGN&gt;</code>。不要把视频 ID 或 course_id 填到课堂 ID。',
+        cookie: 'F12 → Application → Cookies → <code class="g-code">https://changjiang.yuketang.cn</code><br><code class="g-code">csrftoken / sessionid / uv_id（或 university_id）</code>',
+        tip: '学校 ID 优先填 uv_id。每项只复制“值”，不要复制整段 Cookie，也不要截图或发送凭据。',
+    },
+    'njauyjs.yuketang.cn': {
+        label: '南京农业大学雨课堂',
+        course: '登录后进入课程目录页，从地址中提取 <code class="g-code">classroom_id</code> 与 <code class="g-code">sign</code>。地址未显示 sign 时，在 F12 → Network 刷新目录，查看 chapter 请求的 Query String。',
+        cookie: 'F12 → Application → Cookies → <code class="g-code">https://njauyjs.yuketang.cn</code><br><code class="g-code">csrftoken / sessionid / uv_id（或 university_id）</code>',
+        tip: '平台的 xtbz=cloud 已自动处理，无需填写。课堂 ID 不是视频 ID 或 course_id；每项只复制本机的“值”。',
+    },
+};
 
 let pollTimer = null;
 let failCount = 0;
@@ -40,9 +59,21 @@ function collectParams() {
 
 function saveRunParams() {
     try {
+        const params = collectParams();
         const only = {};
-        for (const k of RUN_KEYS) only[k] = collectParams()[k];
+        for (const k of RUN_KEYS) only[k] = params[k];
         localStorage.setItem(STORE_KEY, JSON.stringify(only));
+        const remember = !!($('f_remember_auth') && $('f_remember_auth').checked);
+        if (remember) {
+            const auth = {};
+            for (const k of AUTH_KEYS) auth[k] = params[k];
+            localStorage.setItem(AUTH_STORE_KEY, JSON.stringify(auth));
+            localStorage.setItem(REMEMBER_AUTH_KEY, 'true');
+        } else {
+            localStorage.removeItem(AUTH_STORE_KEY);
+            localStorage.removeItem(REMEMBER_AUTH_KEY);
+        }
+        if (typeof window.savePortableState === 'function') window.savePortableState();
     } catch (e) { /* 存储不可用时静默 */ }
 }
 
@@ -54,7 +85,31 @@ function loadRunParams() {
             if (BOOL_RUN.has(k)) $('f_' + k).checked = !!saved[k];
             else $('f_' + k).value = saved[k];
         }
+        const remember = localStorage.getItem(REMEMBER_AUTH_KEY) === 'true';
+        const rememberBox = $('f_remember_auth');
+        if (rememberBox) rememberBox.checked = remember;
+        if (remember) {
+            const auth = JSON.parse(localStorage.getItem(AUTH_STORE_KEY) || '{}');
+            for (const k of AUTH_KEYS) {
+                if (typeof auth[k] === 'string') $('f_' + k).value = auth[k];
+            }
+        }
     } catch (e) { /* 忽略损坏数据 */ }
+}
+
+function updatePlatformGuide() {
+    const select = $('f_platform_host');
+    const host = (select && select.value) || 'changjiang.yuketang.cn';
+    const guide = PLATFORM_GUIDES[host];
+    if (!guide) return;
+    const course = $('guideCourse');
+    const cookie = $('guideCookie');
+    const tip = $('guideTip');
+    if (course) course.innerHTML = guide.course;
+    if (cookie) cookie.innerHTML = guide.cookie;
+    if (tip) tip.textContent = guide.tip;
+    const badge = $('mockBadge');
+    if (badge) badge.textContent = `${guide.label} · ${host}`;
 }
 
 // ---------------- 动作 ----------------
@@ -110,9 +165,11 @@ function flashCfg(msg) { const el = $('cfgError'); if (el) el.textContent = msg 
 
 function emptyConsoleState(title, hint) {
     return `<div class="yk-empty-state">
-        <span class="yk-empty-state-dot" aria-hidden="true"></span>
-        <span class="yk-empty-state-title">${esc(title)}</span>
-        <small>${esc(hint)}</small>
+        <span class="yk-empty-state-marker" aria-hidden="true"></span>
+        <span class="yk-empty-state-copy">
+            <span class="yk-empty-state-title">${esc(title)}</span>
+            <small>${esc(hint)}</small>
+        </span>
     </div>`;
 }
 
@@ -167,6 +224,10 @@ function render(snap) {
     setView(snap.state);
     $('stateText').textContent = STATE_LABEL[snap.state] || snap.state.toUpperCase();
     $('stateBadge').className = 'state-badge ' + snap.state;
+    const host = (snap.params_masked || {}).platform_host;
+    if (host) {
+        $('mockBadge').textContent = (host === 'njauyjs.yuketang.cn' ? '南京农业大学雨课堂' : '长江雨课堂') + ' · ' + host;
+    }
 
     // HUD 计数（数值变化时触发跳变微交互）
     const s = snap.stats || {};
@@ -233,12 +294,20 @@ function renderExec(snap) {
     const cur = pickCurrent(snap);
     if (cur) {
         $('curBody').innerHTML =
-            `<p class="cur-chapter">${esc(cur.chapter)}</p>
-             <p class="cur-name">${esc(cur.name)}</p>
-             <span class="cur-kind">${esc(cur.kind)}</span>
-             <i class="heart" title="心跳"></i>
-             <div class="cur-bar"><i style="width:${cur.pct}%"></i></div>
-             <div class="cur-row"><span class="cur-pct">${cur.pct}%</span><span class="muted">进行中</span></div>`;
+            `<div class="yk-task-card">
+                <div class="yk-task-meta">
+                    <span class="cur-chapter">${esc(cur.chapter)}</span>
+                    <span class="cur-kind">${esc(cur.kind)}</span>
+                </div>
+                <div class="yk-task-head">
+                    <strong class="cur-name">${esc(cur.name)}</strong>
+                    <span class="yk-task-live"><i class="heart" title="心跳"></i>进行中</span>
+                </div>
+                <div class="yk-task-progress">
+                    <div class="cur-bar"><i style="width:${cur.pct}%"></i></div>
+                    <span class="cur-pct">${cur.pct}%</span>
+                </div>
+             </div>`;
     } else if (snap.state === 'ready') {
         const tasks = snap.tasks || [];
         const vCount = tasks.filter(t => t.kind === 'video').length;
@@ -284,7 +353,11 @@ function renderExec(snap) {
     if (ws.length) {
         $('workersBox').innerHTML = ws.map(w =>
             `<div class="worker-row">
-                <span>${esc(w.name)}</span><span class="w-pct">${w.pct}%</span>
+                <div class="worker-row-head">
+                    <span class="worker-dot" aria-hidden="true"></span>
+                    <span class="worker-name">${esc(w.name)}</span>
+                    <span class="w-pct">${w.pct}%</span>
+                </div>
                 <div class="w-bar"><i style="width:${w.pct}%"></i></div>
              </div>`).join('');
     } else if (snap.state === 'ready') {
@@ -336,13 +409,13 @@ function renderTerminal(snap) {
     const st = snap.summary;
     if (snap.state === 'finished') {
         el.className = 'terminal-banner ok';
-        el.innerHTML = `<strong>✓ 执行完成</strong> — 共 ${st.total} 个任务 · 完成 ${st.completed} · 跳过 ${st.skipped} · 失败 ${st.failed}。可点「重新配置」开始下一门课。`;
+        el.innerHTML = `<span class="terminal-icon" aria-hidden="true">✓</span><div><strong>执行完成</strong><small>共 ${st.total} 个任务，完成 ${st.completed}，跳过 ${st.skipped}，失败 ${st.failed}。可重新配置后开始下一门课。</small></div>`;
     } else if (snap.state === 'stopped') {
         el.className = 'terminal-banner warn';
-        el.innerHTML = `<strong>■ 已停止</strong> — 用户请求停止 · 已停止 ${st.stopped} · 未开始的任务保持排队。可点「重新配置」改参数或换课。`;
+        el.innerHTML = `<span class="terminal-icon" aria-hidden="true">■</span><div><strong>已停止</strong><small>已停止 ${st.stopped} 个任务；未开始的任务仍保留在队列中。可重新配置参数或切换课程。</small></div>`;
     } else {
         el.className = 'terminal-banner bad';
-        el.innerHTML = `<strong>× 出错</strong> — ${esc(snap.error || '未知错误')}`;
+        el.innerHTML = `<span class="terminal-icon" aria-hidden="true">×</span><div><strong>执行出错</strong><small>${esc(snap.error || '未知错误')}</small></div>`;
     }
 }
 
@@ -394,6 +467,9 @@ function fillDemoParams() {
 
 window.addEventListener('load', () => {
     loadRunParams();
+    const rememberBox = $('f_remember_auth');
+    if (rememberBox) rememberBox.addEventListener('change', saveRunParams);
+    updatePlatformGuide();
     renderNow();          // 刷新后按服务端真实状态恢复视图
     startPolling();
     // ?layoutdebug=1：把关键元素渲染坐标写入标题（布局自检/回归用）
@@ -422,3 +498,4 @@ window.stopPolling = stopPolling;
 window.fillDemoParams = fillDemoParams;
 window.loadRunParams = loadRunParams;
 window.saveRunParams = saveRunParams;
+window.updatePlatformGuide = updatePlatformGuide;

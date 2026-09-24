@@ -34,6 +34,8 @@ question_banks/
 
 # 本机窗口状态（保留在程序约定路径，不入库）
 .window_state.json
+# 便携版用户数据（题库选择、历史、偏好和可选凭据）
+study_workbench_data.json
 # 本机桌面解释器配置（不入库）
 /desktop-python.txt
 

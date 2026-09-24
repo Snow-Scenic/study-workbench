@@ -52,6 +52,7 @@ def test_auth_fields_constant_complete():
 
 def test_defaults_filled():
     p = validate_params(dict(AUTH_OK))
+    assert p["platform_host"] == "changjiang.yuketang.cn"
     assert p["video_speed"] == 1.5
     assert p["heartbeat_interval"] == 5
     assert p["max_workers"] == 3
@@ -92,6 +93,13 @@ def test_numeric_coercion_and_clamps():
 def test_unknown_keys_ignored():
     p = validate_params({**AUTH_OK, "hacker_field": "x"})
     assert "hacker_field" not in p
+
+
+def test_platform_host_is_restricted_to_known_profiles():
+    assert validate_params({**AUTH_OK, "platform_host": "njauyjs.yuketang.cn"})[
+        "platform_host"] == "njauyjs.yuketang.cn"
+    assert validate_params({**AUTH_OK, "platform_host": "example.invalid"})[
+        "platform_host"] == "changjiang.yuketang.cn"
 
 
 # ---------- MockCore.analyze ----------
@@ -231,7 +239,5 @@ def test_get_core_returns_mock_by_default(monkeypatch):
 def test_get_core_real_returns_adapter(monkeypatch):
     import config
     monkeypatch.setattr(config, "CORE_IMPL", "real", raising=False)
-    import yuketang_adapter
-    monkeypatch.setattr(yuketang_adapter, "load_upstream_module", lambda src: type("DummyMod", (), {})())
     from yuketang_adapter import RealYukeCore
     assert type(get_core()).__name__ == "RealYukeCore"

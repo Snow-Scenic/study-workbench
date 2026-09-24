@@ -11,6 +11,17 @@
     <link rel="stylesheet" href="/static/css/pages.css?v=2.0">
     <link rel="stylesheet" href="/static/css/yuketang.css?v=2.0">
     <script>
+    // 服务端在脚本加载前注入 EXE 同目录的便携状态。
+    window.__PORTABLE_STATE__ = {{PORTABLE_STATE_JSON}};
+    (function (state) {
+        var storage = state && state.storage;
+        if (!storage || typeof storage !== 'object') return;
+        Object.keys(storage).forEach(function (key) {
+            try { localStorage.setItem(key, String(storage[key])); } catch (e) {}
+        });
+    })(window.__PORTABLE_STATE__);
+    </script>
+    <script>
     (function(){
         window.__PAGE_ERRORS__ = [];
         window.addEventListener('error', function(e) {
@@ -47,20 +58,113 @@
                 window.close();
             }
         };
-        window.desktopStartResize = window.desktopStartResize || function(edge) {
-            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.start_resize === 'function') {
-                window.pywebview.api.start_resize(edge);
+        window.desktopStartResize = window.desktopStartResize || (function() {
+            var active = null;
+            var animationFrame = 0;
+            var requestInFlight = false;
+
+            function scheduleResize() {
+                if (animationFrame || requestInFlight || !active) return;
+                animationFrame = requestAnimationFrame(function() {
+                    animationFrame = 0;
+                    if (!active || requestInFlight || !active.pending) return;
+                    var pending = active.pending;
+                    active.pending = null;
+                    requestInFlight = true;
+                    window.pywebview.api.resize_window(
+                        pending.width, pending.height, active.edge
+                    ).catch(function() {}).finally(function() {
+                        requestInFlight = false;
+                        scheduleResize();
+                    });
+                });
             }
-        };
-        window.desktopDragWindow = window.desktopDragWindow || function() {
-            if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.drag_window === 'function') {
-                window.pywebview.api.drag_window();
+
+            function finishResize(event) {
+                if (!active) return;
+                if (event && active.pointerId !== event.pointerId) return;
+                if (active.handle && active.handle.hasPointerCapture(active.pointerId)) {
+                    active.handle.releasePointerCapture(active.pointerId);
+                }
+                active = null;
             }
+
+            return function(edge, event) {
+                if (!event || event.button !== 0 || !window.pywebview ||
+                        !window.pywebview.api ||
+                        typeof window.pywebview.api.resize_window !== 'function') return false;
+
+                event.preventDefault();
+                event.stopPropagation();
+                var handle = event.currentTarget;
+                active = {
+                    edge: edge,
+                    pointerId: event.pointerId,
+                    handle: handle,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    startWidth: window.innerWidth,
+                    startHeight: window.innerHeight,
+                    pending: null
+                };
+                handle.setPointerCapture(event.pointerId);
+
+                function onPointerMove(moveEvent) {
+                    if (!active || moveEvent.pointerId !== active.pointerId) return;
+                    var dx = moveEvent.clientX - active.startX;
+                    var dy = moveEvent.clientY - active.startY;
+                    active.pending = {
+                        width: active.startWidth + (edge.indexOf('left') !== -1 ? -dx :
+                            edge.indexOf('right') !== -1 ? dx : 0),
+                        height: active.startHeight + (edge.indexOf('top') !== -1 ? -dy :
+                            edge.indexOf('bottom') !== -1 ? dy : 0)
+                    };
+                    scheduleResize();
+                }
+
+                function onPointerUp(upEvent) {
+                    finishResize(upEvent);
+                    window.removeEventListener('pointermove', onPointerMove);
+                    window.removeEventListener('pointerup', onPointerUp);
+                    window.removeEventListener('pointercancel', onPointerUp);
+                }
+
+                window.addEventListener('pointermove', onPointerMove);
+                window.addEventListener('pointerup', onPointerUp);
+                window.addEventListener('pointercancel', onPointerUp);
+                return false;
+            };
+        })();
+
+        window.desktopDragWindow = window.desktopDragWindow || function(event) {
+            if (!event || event.button !== 0 || !window.pywebview ||
+                    typeof window.pywebview._jsApiCallback !== 'function') return false;
+            event.preventDefault();
+            var initialX = event.clientX;
+            var initialY = event.clientY;
+
+            function onPointerMove(moveEvent) {
+                window.pywebview._jsApiCallback(
+                    'pywebviewMoveWindow',
+                    [moveEvent.screenX - initialX, moveEvent.screenY - initialY],
+                    'move'
+                );
+            }
+            function onPointerUp() {
+                window.removeEventListener('pointermove', onPointerMove);
+                window.removeEventListener('pointerup', onPointerUp);
+                window.removeEventListener('pointercancel', onPointerUp);
+            }
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp);
+            window.addEventListener('pointercancel', onPointerUp);
+            return false;
         };
         var urlTheme = location.search.indexOf('theme=dark') !== -1 ? 'dark' : (location.search.indexOf('theme=light') !== -1 ? 'light' : null);
         var t = urlTheme || localStorage.getItem('quiz_theme') || 'light';
         document.documentElement.setAttribute('data-theme', t);
-        if (location.search.indexOf('desktop=1') !== -1 || window.pywebview || navigator.userAgent.indexOf('pywebview') !== -1) {
+        var isDesktop = location.search.indexOf('desktop=1') !== -1 || window.pywebview || navigator.userAgent.indexOf('pywebview') !== -1;
+        if (isDesktop) {
             document.documentElement.classList.add('desktop-mode');
         }
     })();
@@ -69,14 +173,14 @@
 <body>
 
 <!-- Windows 11 Frameless Resize Handles (8 方向原生拖拽缩放边界) -->
-<div class="win-resize-handle top" onmousedown="desktopStartResize('top')" aria-hidden="true"></div>
-<div class="win-resize-handle bottom" onmousedown="desktopStartResize('bottom')" aria-hidden="true"></div>
-<div class="win-resize-handle left" onmousedown="desktopStartResize('left')" aria-hidden="true"></div>
-<div class="win-resize-handle right" onmousedown="desktopStartResize('right')" aria-hidden="true"></div>
-<div class="win-resize-handle top-left" onmousedown="desktopStartResize('top-left')" aria-hidden="true"></div>
-<div class="win-resize-handle top-right" onmousedown="desktopStartResize('top-right')" aria-hidden="true"></div>
-<div class="win-resize-handle bottom-left" onmousedown="desktopStartResize('bottom-left')" aria-hidden="true"></div>
-<div class="win-resize-handle bottom-right" onmousedown="desktopStartResize('bottom-right')" aria-hidden="true"></div>
+<div class="win-resize-handle top" onpointerdown="return desktopStartResize('top', event)" aria-hidden="true"></div>
+<div class="win-resize-handle bottom" onpointerdown="return desktopStartResize('bottom', event)" aria-hidden="true"></div>
+<div class="win-resize-handle left" onpointerdown="return desktopStartResize('left', event)" aria-hidden="true"></div>
+<div class="win-resize-handle right" onpointerdown="return desktopStartResize('right', event)" aria-hidden="true"></div>
+<div class="win-resize-handle top-left" onpointerdown="return desktopStartResize('top-left', event)" aria-hidden="true"></div>
+<div class="win-resize-handle top-right" onpointerdown="return desktopStartResize('top-right', event)" aria-hidden="true"></div>
+<div class="win-resize-handle bottom-left" onpointerdown="return desktopStartResize('bottom-left', event)" aria-hidden="true"></div>
+<div class="win-resize-handle bottom-right" onpointerdown="return desktopStartResize('bottom-right', event)" aria-hidden="true"></div>
 
 <!-- Windows 11 Native Caption Bar (桌面沉浸式标题按钮) -->
 <div class="win-caption-bar" id="winCaptionBar">
@@ -161,7 +265,7 @@
     <!-- ===== 右侧主体视口 ===== -->
     <div class="main-viewport">
         <!-- 顶栏 (TopBar: 52px) -->
-        <header class="topbar" onmousedown="if(event.target.closest('button, input, select, a, .win-nav-capsule') === null) { desktopDragWindow(); }">
+        <header class="topbar" onpointerdown="if(event.target.closest('button, input, select, a, .win-nav-capsule') === null) { return desktopDragWindow(event); }">
             <div class="topbar-left">
                 <div class="win-nav-capsule">
                     <button class="win-nav-capsule-btn nav-btn" id="navBackBtn" onclick="AppShell.goBack();" title="后退 (Alt+Left)" aria-label="后退">
@@ -477,14 +581,16 @@
                     <section class="yk-config" id="configPanel">
                         <div class="cfg-card">
                             <h2>课程接入参数</h2>
-                            <p class="muted">真实模式将连接长江雨课堂执行；认证字段仅存内存，不落盘。填入「演示参数」可离线体验全流程。</p>
+                            <p class="muted">真实模式连接所选雨课堂平台；认证字段默认只存内存。填入「演示参数」可离线体验全流程。</p>
                             <div class="cfg-grid cfg-auth">
+                                <label>平台<select id="f_platform_host" onchange="updatePlatformGuide()"><option value="changjiang.yuketang.cn">长江雨课堂</option><option value="njauyjs.yuketang.cn">南京农业大学雨课堂</option></select></label>
                                 <label>课堂 ID<input id="f_classroom_id" placeholder="如 12345678"></label>
                                 <label>签名 SIGN<input id="f_sign" placeholder="URL 中的 sign 参数"></label>
                                 <label>学校 ID<input id="f_university_id" placeholder="学校 ID / uv_id"></label>
                                 <label>CSRF 令牌<input id="f_csrf_token" type="password" placeholder="Cookie: csrftoken"></label>
                                 <label>会话 ID<input id="f_session_id" type="password" placeholder="Cookie: sessionid"></label>
                             </div>
+                            <label class="cfg-credential-option"><input type="checkbox" id="f_remember_auth"><span><b>记住登录凭据</b><small>将课堂与 Cookie 参数明文写入 EXE 同目录的 study_workbench_data.json；仅建议在个人电脑开启。</small></span></label>
                             <details class="run-params">
                                 <summary>运行参数（对应原脚本 .env 配置）</summary>
                                 <div class="cfg-grid">
@@ -512,10 +618,10 @@
                             <div class="side-card">
                                 <h4>获取配置参数</h4>
                                 <ol class="side-steps">
-                                    <li><b>课堂参数</b><span>课程页 URL 中提取：<br><code class="g-code">classroom_id = 12345678</code><code class="g-code">sign = your_sign</code></span></li>
-                                    <li><b>Cookie 参数</b><span>F12 → Application → Cookies：<br><code class="g-code">csrftoken / sessionid / uv_id</code></span></li>
+                                    <li><b id="guideCourseTitle">课堂参数</b><span id="guideCourse">课程目录页 URL 中提取：<br><code class="g-code">classroom_id = 12345678</code><code class="g-code">sign = your_sign</code></span></li>
+                                    <li><b id="guideCookieTitle">Cookie 参数</b><span id="guideCookie">F12 → Application → Cookies：<br><code class="g-code">csrftoken / sessionid / uv_id</code></span></li>
                                 </ol>
-                                <p class="g-tip">uv_id 即「学校 ID」；三个值分别填入左侧对应输入框</p>
+                                <p class="g-tip" id="guideTip">uv_id 即「学校 ID」；三个值分别填入左侧对应输入框</p>
                             </div>
                             <div class="side-card">
                                 <h4>工作原理</h4>
@@ -528,7 +634,7 @@
                                 </ul>
                             </div>
                             <div class="side-card demo-note">
-                                双模式：演示参数＝离线体验；真实参数＝连接长江雨课堂。
+                                双模式：演示参数＝离线体验；真实参数＝连接所选平台。
                             </div>
                         </aside>
                     </section>
@@ -656,9 +762,5 @@
 <script src="/static/js/yuketang.js?v=2.7.1"></script>
 <script src="/static/js/app-shell.js?v=2.7.1"></script>
 <script src="/static/js/main.js?v=2.7.1"></script>
-<script>
-// 存活信号：告知服务端浏览器仍开着（超时无信号服务端自动退出释放端口）
-setInterval(function () { fetch('/beacon').catch(function () {}); }, 3000);
-</script>
 </body>
 </html>

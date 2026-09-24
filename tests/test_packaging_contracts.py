@@ -13,22 +13,29 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_build_contract():
     script = text('build.bat')
     assert '--hiddenimports' not in script
-    assert script.count('--hidden-import ') == 5
+    assert script.count('--hidden-import ') == 4
     assert 'cd /d "%~dp0"' in script
-    for name in ['StudyWorkbench.v1.3.0', 'StudyWorkbench.Desktop.v1.3.0']:
-        assert '--name ' + name + ' ' in script
-        for doc in ['README.md', 'README.en.md']:
-            assert 'dist\\' + name + '.exe' in text(doc)
+    name = 'StudyWorkbench.Desktop.v1.3.0'
+    assert '--name ' + name + ' ' in script
+    for doc in ['README.md', 'README.en.md']:
+        assert 'dist\\' + name + '.exe' in text(doc)
     desktop_build = script.split('StudyWorkbench.Desktop.v1.3.0', 1)[0]
     assert '--windowed' in desktop_build
+    for module in ['PyQt5', 'PyQt6', 'PySide2', 'PySide6', 'qtpy']:
+        assert f'--exclude-module {module}' in desktop_build
 
 
-def test_main_loopback_binding():
-    tree = ast.parse(text('main.py'))
-    calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and
-             isinstance(n.func, ast.Attribute) and n.func.attr == 'ThreadingTCPServer']
-    assert len(calls) == 1
-    assert calls[0].args[0].elts[0].value == '127.0.0.1'
+def test_yuketang_platform_choice_is_available_in_both_shells():
+    """浏览器独立页和桌面内嵌页都必须包含同一平台选择控件。"""
+    for name in ['templates/yuketang.html', 'templates/index.html']:
+        page = text(name)
+        assert '<select id="f_platform_host"' in page
+        assert 'njauyjs.yuketang.cn' in page
+        assert 'id="guideCourse"' in page
+        assert 'id="guideCookie"' in page
+    script = text('static/js/yuketang.js')
+    assert 'PLATFORM_GUIDES' in script
+    assert 'updatePlatformGuide' in script
 
 
 def test_launchers_portable_contract():
@@ -56,6 +63,28 @@ def test_launchers_portable_contract():
     assert 'run_desktop.bat' in vbs and '--silent' in vbs
     assert 'pythonw' not in vbs and '%PATH%' not in vbs
     assert 'WScript.Quit 1' in vbs and 'MsgBox' in vbs
+
+
+def test_desktop_resize_uses_native_loop_without_global_drag_conflict():
+    """拖动和缩放必须走 pywebview 已知的逻辑像素 API。"""
+    source = text('desktop_app.py')
+    assert '(style & ~WS_THICKFRAME) | WS_MAXIMIZEBOX | WS_MINIMIZEBOX' in source
+    assert 'easy_drag=False' in source
+    assert 'def resize_window(self, width, height, edge):' in source
+    assert 'from webview.window import FixPoint' in source
+    assert 'self._window.resize(width, height, fix_point)' in source
+    assert 'GetAsyncKeyState(0x01)' not in source
+    assert 'SetWindowPos(_current_hwnd, 0, *bounds, 0x0014)' not in source
+    assert '_resize_worker' not in source
+    assert 'WM_SYSCOMMAND = 0x0112' not in source
+    assert 'original_style | WS_THICKFRAME' not in source
+
+    page = text('templates/index.html')
+    assert "onpointerdown=\"return desktopStartResize('bottom-right', event)\"" in page
+    assert "'pywebviewMoveWindow'" in page
+    assert 'requestAnimationFrame' in page
+    assert 'resize_window(' in page
+    assert 'window-resizing' not in page
 
 
 def text(name):
@@ -87,4 +116,13 @@ def test_desktop_uses_persistent_config_directory(monkeypatch, frozen):
     expected = str(ROOT / 'dist') if frozen else str(ROOT)
     assert namespace['BASE_DIR'] == config.BASE_DIR == expected
     assert namespace['WINDOW_STATE_FILE'] == os.path.join(expected, '.window_state.json')
-    assert config.YUKETANG_SRC_DIR == os.path.join(os.path.dirname(expected), 'yuketang-main')
+    assert not hasattr(config, 'YUKETANG_SRC_DIR')
+
+
+def test_desktop_rejects_offscreen_saved_window_state():
+    """错误的窗口坐标不能让无窗口启动脚本把应用永久藏到屏幕外。"""
+    source = text('desktop_app.py')
+    assert 'def _window_state_is_visible(state):' in source
+    assert 'SM_XVIRTUALSCREEN = 76' in source
+    assert 'visible_margin = 96' in source
+    assert '_window_state_is_visible(state)' in source

@@ -13,6 +13,48 @@ const STORAGE_KEYS = {
     questionStatus: 'quiz_questionStatus',
 };
 
+// 便携版只把进度与偏好写入 EXE 同目录 JSON；题库本体由 question_banks/ 保存。
+const PORTABLE_STORAGE_KEYS = [
+    STORAGE_KEYS.bankName, STORAGE_KEYS.wrongRecords, STORAGE_KEYS.answeredIds,
+    STORAGE_KEYS.theme, STORAGE_KEYS.threshold, STORAGE_KEYS.totalStats,
+    STORAGE_KEYS.wrongReviewEnabled, STORAGE_KEYS.questionStatus,
+    'shell_sidebar_collapsed', 'yk_run_params', 'yk_remember_auth', 'yk_auth_params',
+];
+let _portableSaveTimer = null;
+
+function portableStorageSnapshot() {
+    const storage = {};
+    for (const key of PORTABLE_STORAGE_KEYS) {
+        try {
+            const value = localStorage.getItem(key);
+            if (value !== null) storage[key] = value;
+        } catch (e) { /* localStorage 不可用时保留本次会话 */ }
+    }
+    return storage;
+}
+
+function savePortableState(immediate = false) {
+    // This endpoint is available in the desktop server. Keep ordinary browser
+    // previews and the lightweight test harness functional without it.
+    if (typeof fetch !== 'function') return Promise.resolve();
+
+    const send = () => {
+        _portableSaveTimer = null;
+        return fetch('/api/portable-state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ storage: portableStorageSnapshot() }),
+            keepalive: true,
+        }).catch(() => {});
+    };
+    if (immediate) {
+        if (_portableSaveTimer) clearTimeout(_portableSaveTimer);
+        return send();
+    }
+    if (_portableSaveTimer) clearTimeout(_portableSaveTimer);
+    _portableSaveTimer = setTimeout(send, 320);
+}
+
 // L2：隔离每个键的存储异常——单个 setItem 失败（如超配额）不能中断答题收尾。
 // JSON 序列化错误同样隔离（循环引用等），失败键仅告警并继续其余键。
 function _safeSetItem(key, value) {
@@ -48,6 +90,7 @@ function saveToLocalStorage() {
     put(STORAGE_KEYS.wrongReviewEnabled, () => we ? 'true' : 'false');
     put(STORAGE_KEYS.questionStatus, () => JSON.stringify(qs));
     if (failed > 0) console.warn(`[storage] ${failed} 项数据未能持久化，刷新后可能丢失部分进度。`);
+    savePortableState();
     return failed === 0;
 }
 
@@ -123,4 +166,9 @@ function loadProgressOnly() {
     try { questionStatus = JSON.parse(localStorage.getItem(STORAGE_KEYS.questionStatus) || '{}'); } catch (e) {}
     const wrongReviewEnabled = localStorage.getItem(STORAGE_KEYS.wrongReviewEnabled) !== 'false';
     return { name, wrongRecords, answeredIds: new Set(ids), totalStats, wrongReviewEnabled, questionStatus };
+}
+
+window.savePortableState = savePortableState;
+if (typeof window.addEventListener === 'function') {
+    window.addEventListener('pagehide', () => { savePortableState(true); });
 }

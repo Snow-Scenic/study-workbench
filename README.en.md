@@ -2,8 +2,8 @@
 
 [简体中文](README.md) | **English**
 
-> A local study platform combining **quiz practice** and a **Yuketang course console**: import JSON question banks to practice, and drive your Changjiang Yuketang courses from a web console.
-> Runs locally on your machine with no database. **This repository ships with NO question-bank data.** Demo mode is offline; real course mode communicates with Changjiang Yuketang.
+> A local study platform combining **quiz practice** and a **Yuketang course console**: import JSON question banks to practice, and drive supported Yuketang courses from a web console.
+> Runs locally on your machine with no database. **This repository ships with NO question-bank data.** Demo mode is offline; real course mode uses a selected supported Yuketang platform.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
@@ -23,7 +23,7 @@
 ### 🎓 Course Console (Yuketang)
 - Configure course credentials → analyze structure → task timeline → multi-threaded execution
 - Live progress bars, per-task states (running / done / skipped / stopped / failed), system log terminal
-- **Dual mode**: fill in the demo parameters for a full offline simulation, or use real credentials to drive your actual Changjiang Yuketang courses online
+- **Dual mode**: use demo parameters for a full offline simulation, or select Changjiang Yuketang / Nanjing Agricultural University Yuketang for real mode
 
 ---
 
@@ -37,16 +37,15 @@ Download the latest `StudyWorkbench.Desktop.v1.3.0.exe` from [Releases](../../re
 > - **Move it to a writable folder first** (e.g. `D:\StudyWorkbench\`) before running — imported banks are saved to `question_banks\` next to the exe, which can fail inside `C:\Program Files\` or straight from an un-extracted zip.
 > - **SmartScreen notice**: the EXE is not code-signed. On first launch click *More info → Run anyway*.
 > - **Desktop runtime**: Microsoft Edge WebView2 Runtime is required; it is normally included with Windows 10/11.
-> - **Local data**: banks, window size and practice progress stay on the local machine. Release assets contain no banks or course credentials.
-
-`StudyWorkbench.v1.3.0.exe` remains available as a browser-mode build; it opens your default browser instead of a native desktop window.
+> - **Local data**: first launch creates `study_workbench_data.json` next to the exe for the selected bank, practice history, UI preferences, and course run settings. Imported banks are stored in the neighboring `question_banks\` folder, so both are restored on the next launch.
+> - **Credential safety**: Cookie/session fields are memory-only by default. They are written in plain text to that JSON only after you explicitly tick 「记住登录凭据」 (Remember login credentials). Enable it only on your own protected PC; never share or upload the file.
 
 ### Option 2: Run from source
 ```bash
 python -m pip install -r requirements.txt
-python main.py                    # Browser mode; Python 3.11+
+run_desktop.bat                   # Desktop window mode; Python 3.11+
 ```
-Your browser opens `http://localhost:8000` automatically (ports 8001–8009 are tried if busy). To start the native desktop app from source, use `run_desktop.bat` or the bundled hidden-window VBS launcher.
+For a hidden console, launch the bundled VBS launcher; `run_desktop.bat` is also available. The desktop window uses a local loopback service internally (ports 8001–8009 are tried if busy), but never opens an external browser.
 
 ### Importing question banks
 > The repository and the app ship **without any question data** — bring your own JSON bank.
@@ -108,7 +107,6 @@ Rules: `id` must be unique across the whole bank; invalid questions are skipped;
 ## 🗂️ Project layout
 
 ```
-├── main.py                # Browser-mode entry point: starts HTTP server + opens browser
 ├── desktop_app.py         # Native desktop entry point (pywebview + WebView2)
 ├── config.py              # Constants (port 8000, paths, core mode)
 ├── server.py              # HTTP: pages / bank scan / archive API / Yuketang API
@@ -118,7 +116,7 @@ Rules: `id` must be unique across the whole bank; invalid questions are skipped;
 │   └── js/                # Front-end modules (state/storage/render/answer/nav/stats…)
 ├── tests/                 # Python and Node.js regression tests
 ├── examples/              # demo-bank.json covering every question type
-├── build.bat              # packages browser and windowless desktop EXEs
+├── build.bat              # packages the windowless desktop EXE
 ├── run_desktop.bat        # desktop source launcher
 ├── docs/RELEASE.md        # GitHub Releases checklist
 ├── CHANGELOG.md           # Changelog
@@ -128,9 +126,8 @@ Rules: `id` must be unique across the whole bank; invalid questions are skipped;
 Runtime folders (git-ignored): `question_banks/`, `dist/`, `build/`.
 
 `build.bat` requires PyInstaller on PATH and produces
-`dist\StudyWorkbench.v1.3.0.exe` (browser mode) and
 `dist\StudyWorkbench.Desktop.v1.3.0.exe` (windowless native desktop mode; requires WebView2 Runtime).
-Neither executable includes question data.
+It does not include question data.
 See the [release checklist](docs/RELEASE.md) before publishing an asset.
 
 ---
@@ -140,10 +137,9 @@ See the [release checklist](docs/RELEASE.md) before publishing an asset.
 The console is based on **[Gary-666/yuketang](https://github.com/Gary-666/yuketang)** (upstream CLI script),
 rebuilt here as a web console (credential setup → task timeline → threaded execution → live logs).
 
-- ⚠️ Currently supports **Changjiang Yuketang only**
+- Real-mode profiles: **Changjiang Yuketang** and **Nanjing Agricultural University Yuketang**. Select a profile in the console; credentials are never sent to arbitrary custom domains.
 - Ships with an offline **Mock** demo core; the **real execution core is integrated** and drives the live service when real credentials are provided (`config.CORE_IMPL = 'auto'`)
-- Upstream source is loaded locally at runtime from `YUKETANG_SRC_DIR` (see config.py); it is not redistributed by this repository
-  - Place upstream `yuketang-main\` (containing `main.py`) in the **parent directory** of the program directory: the repo's parent for source runs, or the parent of the folder containing the exe for packaged builds (override with the `YK_REAL_SRC_DIR` environment variable).
+- The real-mode client is embedded in this project. Source runs and Release EXEs do **not** require an external `yuketang-main\main.py` directory or `YK_REAL_SRC_DIR`. Authentication fields are used only for the current in-memory session; no `.env` file is read.
 
 ## 📄 Disclaimer
 

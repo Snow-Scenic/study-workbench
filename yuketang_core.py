@@ -22,6 +22,8 @@ AUTH_FIELDS = ("classroom_id", "sign", "university_id", "csrf_token", "session_i
 
 # 运行参数默认值 —— 与原 yuketang-main main() 的 os.getenv 默认一一对应
 _RUN_DEFAULTS = {
+    # 只接受本应用内置的平台档案，避免认证信息被发送到任意用户输入的地址。
+    "platform_host": "changjiang.yuketang.cn",
     "video_speed": 1.5,            # VIDEO_SPEED
     "heartbeat_interval": 5,       # HEARTBEAT_INTERVAL
     "max_workers": 3,              # MAX_CONCURRENT_VIDEOS
@@ -49,9 +51,14 @@ _CLAMP = {
     "richtext_skip_delay": (0.0, 10.0),
 }
 
+_PLATFORM_HOSTS = {"changjiang.yuketang.cn", "njauyjs.yuketang.cn"}
+
 
 def _coerce(name, raw):
     """把表单/JSON 值转成正确类型并钳制到合法区间；非法输入回退默认值"""
+    if name == "platform_host":
+        host = str(raw or "").strip().lower()
+        return host if host in _PLATFORM_HOSTS else _RUN_DEFAULTS[name]
     if name in _BOOL_PARAMS:
         if isinstance(raw, bool):
             return raw

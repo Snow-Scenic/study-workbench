@@ -2,25 +2,17 @@
 import json
 import os
 import threading
-import time
 import http.server
 from urllib.parse import urlparse, unquote
 
 from config import BASE_DIR, TEMPLATE_DIR, STATIC_DIR, EXTERNAL_BANKS_DIR, INTERNAL_BANKS_DIR, RESOURCE_DIR
+from portable_state import PortableStateStore
 from yuketang_core import YukeParamError, YukeStateError
 from yuketang_manager import YukeJobManager
 
 # 进程内唯一管理器：导入时创建（构造无副作用），避免多线程首次请求竞态
 _YUKE_MANAGER = YukeJobManager()
-
-# ---- 浏览器存活看门狗：任何请求都刷新活跃时间；超时无信号则由入口层关停释放端口 ----
-_LAST_SEEN = time.time()
-
-
-def touch_alive():
-    global _LAST_SEEN
-    _LAST_SEEN = time.time()
-
+_PORTABLE_STATE = PortableStateStore()
 
 def _scan_question_banks():
     """扫描 question_banks/ 目录下的 JSON 文件（合并内部和外部目录）"""
@@ -118,6 +110,13 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             return
         with open(path, 'r', encoding='utf-8') as f:
             html = f.read()
+        if filename in {'index.html', 'yuketang.html'}:
+            # 在其他业务脚本执行前恢复便携状态，避免 WebView2 的 AppData
+            # 存储位置影响 EXE 随文件夹迁移后的题库进度与偏好。
+            bootstrap = json.dumps(
+                {'storage': _PORTABLE_STATE.load_storage()}, ensure_ascii=False
+            ).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
+            html = html.replace('{{PORTABLE_STATE_JSON}}', bootstrap)
         self.send_response(200)
         self.send_header('Content-type', 'text/html; charset=utf-8')
         self.send_header('Cache-Control', 'no-cache')   # 本地应用：样式更新必须立即可见
@@ -132,8 +131,6 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
-        touch_alive()
-
         if path == '/shutdown':
             self.send_response(200)
             self.end_headers()
@@ -141,13 +138,8 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             threading.Thread(target=self.server.shutdown).start()
             return
 
-        if path == '/beacon':                    # 前端存活信号（空响应）
-            self.send_response(204)
-            self.end_headers()
-            return
-
         if path == '/':
-            self._serve_html_file('hub.html')
+            self._serve_html_file('index.html')
 
         elif path == '/quiz':
             self._serve_html_file('index.html')
@@ -223,14 +215,12 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
-        touch_alive()
-
         try:
             length = int(self.headers.get('Content-Length') or 0)
         except ValueError:
             length = 0
-        # 题库保存需容纳真实题库（普遍几十~几百 KB），单独放宽；其余接口维持 64KB 反滥用上限
-        max_body = 8 * 1024 * 1024 if path == '/api/banks/save' else 64 * 1024
+        # 题库保存和便携状态均可能包含较长的历史记录；其余接口维持 64KB 上限。
+        max_body = 8 * 1024 * 1024 if path in {'/api/banks/save', '/api/portable-state'} else 64 * 1024
         if length > max_body:
             return self._send_json(413, {"ok": False, "error": f"请求体超过 {max_body // 1024}KB 上限"})
         raw = self.rfile.read(length) if length else b""
@@ -251,6 +241,9 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                 resp, code = mgr.analyze(payload), 202
             elif path == '/api/banks/save':
                 resp, code = _save_bank(payload), 200
+            elif path == '/api/portable-state':
+                count = _PORTABLE_STATE.save_storage(payload.get('storage', {}))
+                resp, code = {'ok': True, 'saved': count}, 200
             elif path == '/api/yuketang/start':
                 resp, code = mgr.start(), 202
             elif path == '/api/yuketang/stop':

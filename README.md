@@ -23,8 +23,8 @@
 ### 🎓 刷课（雨课堂控制台）
 - 课程参数配置 → 分析课程结构 → 生成任务时间线 → 多线程执行
 - 实时进度条、任务状态图例（执行中/完成/跳过/停止/失败）、系统日志
-- **双模式**：填入演示参数即离线模拟体验；填真实参数则连接长江雨课堂在线执行（暂只支持长江）
-- **真实核心**已集成并经实测验证（视频心跳/图文打卡/多线程并发）
+- **双模式**：填入演示参数即离线模拟体验；真实模式可选择长江雨课堂或南京农业大学雨课堂
+- 真实核心已内置，适配平台域名、进度响应与学校 ID 的兼容差异
 
 ---
 
@@ -38,17 +38,16 @@
 > - **先选好可写目录**：把 exe 移动到独立文件夹（如 `D:\StudyWorkbench\`）再运行——导入的题库存放在同目录的 `question_banks\`，放在 `C:\Program Files\` 或直接在压缩包里运行可能创建失败。
 > - **SmartScreen 警告**：exe 未做代码签名，首次运行请点「更多信息 → 仍要运行」。
 > - **桌面运行环境**：桌面版依赖 Microsoft Edge WebView2 Runtime；Windows 10/11 通常已自带。
-> - **本地数据**：题库、窗口尺寸和练习进度都保留在本机；发布附件不包含任何题库或课程凭据。
-
-如需浏览器模式，可使用 `StudyWorkbench.v1.3.0.exe`；它会打开默认浏览器，适合不使用桌面窗口的场景。
+> - **本地数据**：首次启动会在 exe 同目录创建 `study_workbench_data.json`，保存题库选择、练习历史、界面偏好和课程运行参数；导入的题库保存在同目录 `question_banks\`。下次直接运行即可恢复。
+> - **凭据保护**：Cookie/会话参数默认只在本次运行内存中使用。只有在课程页主动勾选「记住登录凭据」才会明文写入上述 JSON；请只在自己的受保护电脑上开启，切勿把该文件分享或上传。
 
 ### 方式二：Python 源码运行
 ```bash
 python -m pip install -r requirements.txt
-python main.py      # 浏览器模式，需 Python 3.11+
+run_desktop.bat     # 桌面窗口模式，需 Python 3.11+
 ```
 
-启动后浏览器自动打开 `http://localhost:8000`（端口占用时自动尝试 8001~8009）。如需从源码启动原生桌面窗口，可双击“启动学习工作台(无黑框).vbs”，或运行 `run_desktop.bat`。
+推荐双击“启动学习工作台(无黑框).vbs”启动源码桌面版；也可运行 `run_desktop.bat`。桌面窗口内部通过本地回环服务加载界面，端口占用时会自动尝试 8001~8009，不会打开外部浏览器。
 
 桌面启动器统一按以下顺序选择 Python：`STUDY_WORKBENCH_PYTHON` 环境变量 → `desktop-python.txt` 第一行 → `.venv\Scripts\python.exe` → PATH。请确保选中的解释器安装了 `requirements.txt` 中的依赖；`desktop-python.txt` 填完整路径、不带引号，仅保留本机。可运行 `run_desktop.bat --check` 检查解释器与依赖（不启动窗口）。
 
@@ -105,7 +104,7 @@ python -m pip install pyinstaller
 build.bat
 ```
 
-产物：`dist\StudyWorkbench.v1.3.0.exe`（浏览器模式）与 `dist\StudyWorkbench.Desktop.v1.3.0.exe`（无控制台窗口的桌面原生模式，需 WebView2 Runtime）。两者均为纯净空壳，不含题目数据。
+产物：`dist\StudyWorkbench.Desktop.v1.3.0.exe`（无控制台窗口的桌面原生模式，需 WebView2 Runtime）。它是纯净空壳，不含题目数据。
 
 发布 GitHub Releases 前请参阅 [发布清单](docs/RELEASE.md)。
 
@@ -138,7 +137,6 @@ build.bat
 ## 🗂️ 项目结构
 
 ```
-├── main.py                # 浏览器模式入口：启动 HTTP 服务 + 自动打开浏览器
 ├── desktop_app.py         # 原生桌面模式入口（pywebview + WebView2）
 ├── config.py              # 配置常量（端口 8000、目录、雨课堂核心模式）
 ├── server.py              # HTTP 服务：页面路由 / 题库扫描 / 存档 API / 雨课堂 API
@@ -148,7 +146,7 @@ build.bat
 │   └── js/                # 前端逻辑模块（状态/存储/渲染/答题/导航/统计…）
 ├── tests/                 # Python 与 Node.js 回归测试
 ├── examples/              # 示例题库（覆盖全部题型，可复制修改）
-├── build.bat              # 一键打包浏览器版与无控制台桌面版 EXE
+├── build.bat              # 一键打包无控制台桌面版 EXE
 ├── run_desktop.bat        # 源码桌面版启动器
 ├── 启动学习工作台(无黑框).vbs # 无命令行窗口的源码桌面版启动器
 ├── docs/RELEASE.md        # GitHub Releases 发布清单
@@ -165,17 +163,14 @@ build.bat
 重构了其命令行交互为 Web 控制台（参数配置 → 任务时间线 → 多线程执行 → 系统日志），
 并接入离线演示核心用于安全调试。
 
-- ⚠️ **暂只支持长江雨课堂**，其他平台接口未适配
+- 支持的真实平台档案：**长江雨课堂**、**南京农业大学雨课堂**。请在课程控制台的「平台」下拉框中选择；应用不会向任意自定义域名发送认证信息
 - 当前 `config.py → CORE_IMPL = "auto"` 智能路由：`classroom_id` 命中演示哨兵
   （`demo*` / `111` / `test` / `000`）→ 离线 `Mock` 演示核心，全流程离线模拟、
-  不产生真实网络请求；**其他参数将直接连接长江雨课堂在线执行**，请确认你有权
+  不产生真实网络请求；**其他参数将连接所选平台在线执行**，请确认你有权
   操作对应课程后再使用，勿在日志或截图中公开凭据
-- 外部刷课源码（`yuketang-main\`，含 `main.py`）默认放置在 **程序目录的上一级目录**：
-  - 源码运行：仓库父目录，即与 `study-workbench-main\` 同级；
-  - 打包版：`config.py` 以 exe 所在目录为 `BASE_DIR`，查找其**父目录**下的
-    `yuketang-main\`。例如 exe 位于 `D:\StudyWorkbench\app.exe`，默认源码目录是
-    `D:\yuketang-main\`，并非 `D:\StudyWorkbench\yuketang-main\`。
-    也可以用环境变量 `YK_REAL_SRC_DIR` 直接指定源码目录覆盖默认查找。
+- 真实核心已内嵌在项目中，源码运行和 Release EXE 都**不需要**额外下载、放置
+  `yuketang-main\main.py` 或设置 `YK_REAL_SRC_DIR`。本项目只在运行时使用当前表单中
+  的认证字段，不读取 `.env`，也不保存这些字段。
 
 ## 📄 免责声明
 

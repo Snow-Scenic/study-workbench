@@ -391,19 +391,18 @@ body:not(:has(.app-sidebar)),
     -webkit-backdrop-filter: blur(12px);
 }
 
-/* 桌面模式：顶栏作为全宽拖拽区，并右侧留出 Win11 标题按钮空间 */
+/* 桌面模式：顶栏由 desktopDragWindow 显式处理移动，右侧留出标题按钮空间。 */
 .desktop-mode .topbar {
-    -webkit-app-region: drag;
     padding-right: 150px;
 }
 
-/* 顶栏内的按钮/链接不参与拖拽 */
+/* 顶栏内控件保持常规点击行为。 */
 .desktop-mode .topbar button,
 .desktop-mode .topbar a,
 .desktop-mode .topbar input,
 .desktop-mode .topbar select,
 .desktop-mode .win-nav-capsule {
-    -webkit-app-region: no-drag;
+    user-select: auto;
 }
 
 /* ===== Windows 11 原生控制按钮条 (Top Right) ===== */
@@ -414,7 +413,6 @@ body:not(:has(.app-sidebar)),
     height: 40px;
     display: none;
     z-index: 10000;
-    -webkit-app-region: no-drag;
 }
 
 .desktop-mode .win-caption-bar {
@@ -433,7 +431,6 @@ body:not(:has(.app-sidebar)),
     font-size: 11px;
     cursor: pointer;
     transition: background-color 0.1s ease, color 0.1s ease;
-    -webkit-app-region: no-drag;
     user-select: none;
 }
 

@@ -2610,3 +2610,392 @@ body {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 }
+
+/* ============================================================
+   执行台收口：任务信息按层级排版，终态与操作贴近上下文。
+   右栏不再为了与时间线等高而留下大块无意义空白。
+   ============================================================ */
+.yk-console {
+    align-items: start !important;
+}
+.yk-exec {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    align-self: start !important;
+    gap: 10px !important;
+}
+.exec-current,
+.exec-workers {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+}
+#curBody,
+#workersBox {
+    flex: 0 0 auto !important;
+    display: block !important;
+}
+
+/* 空状态使用一枚安静的“任务占位”图标，而非醒目的蓝色圆点。 */
+.yk-empty-state {
+    min-height: 64px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 11px !important;
+    padding: 11px 12px !important;
+    border: 1px solid var(--hairline) !important;
+    border-radius: var(--radius-sm, 8px) !important;
+    background: var(--surface-secondary) !important;
+    text-align: left !important;
+    box-sizing: border-box;
+}
+.yk-empty-state-marker {
+    position: relative;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 8px;
+    background: var(--surface-main);
+}
+.yk-empty-state-marker::before,
+.yk-empty-state-marker::after {
+    content: '';
+    position: absolute;
+    left: 7px;
+    right: 7px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--accent);
+    opacity: 0.7;
+}
+.yk-empty-state-marker::before { top: 9px; }
+.yk-empty-state-marker::after { top: 15px; right: 11px; }
+.yk-empty-state-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.yk-empty-state-title {
+    font-size: 0.8rem !important;
+    line-height: 1.25;
+}
+.yk-empty-state small {
+    max-width: none !important;
+    font-size: 0.72rem !important;
+    line-height: 1.35 !important;
+}
+
+/* 运行中任务：章节、名称、状态和进度各占一行，避免挤成一条长句。 */
+.yk-task-card {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 2px 0;
+    box-sizing: border-box;
+}
+.yk-task-meta,
+.yk-task-head,
+.yk-task-progress,
+.worker-row-head {
+    display: flex;
+    align-items: center;
+}
+.yk-task-meta {
+    justify-content: space-between;
+    gap: 10px;
+}
+.yk-task-card .cur-chapter {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-secondary) !important;
+    font-size: 0.76rem !important;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.yk-task-card .cur-kind {
+    flex: 0 0 auto;
+    padding: 2px 8px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-pill, 999px);
+    background: var(--accent-subtle);
+    color: var(--accent);
+    font-size: 0.68rem;
+    font-weight: 650;
+}
+.yk-task-head {
+    justify-content: space-between;
+    gap: 12px;
+}
+.yk-task-card .cur-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-primary) !important;
+    font-size: 1rem !important;
+    font-weight: 700;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.yk-task-live {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    font-size: 0.76rem;
+    font-weight: 650;
+}
+.yk-task-live .heart {
+    width: 7px;
+    height: 7px;
+    margin: 0;
+    background: var(--danger);
+}
+.yk-task-progress { gap: 10px; }
+.yk-task-progress .cur-bar {
+    flex: 1 1 auto;
+    margin: 0 !important;
+}
+.yk-task-progress .cur-pct {
+    flex: 0 0 auto;
+    color: var(--accent) !important;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.92rem !important;
+    font-weight: 750;
+}
+
+/* 线程条目采用“名称 + 百分比 + 进度条”的小型列表。 */
+.worker-row {
+    display: block !important;
+    margin-bottom: 7px !important;
+    padding: 9px 11px !important;
+}
+.worker-row:last-child { margin-bottom: 0 !important; }
+.worker-row-head { gap: 8px; }
+.worker-dot {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+.worker-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.worker-row .w-pct {
+    margin-left: auto;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+.worker-row .w-bar { margin-top: 8px; }
+
+/* 终态横幅只传达结果，不再占据像内容卡一样的大面积空间。 */
+.terminal-banner {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 13px !important;
+    border-radius: var(--radius-md, 10px) !important;
+    font-size: 0.82rem !important;
+    line-height: 1.4 !important;
+    box-shadow: none !important;
+}
+.terminal-icon {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    border-radius: 50%;
+    background: var(--warning-subtle);
+    color: var(--warning);
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+.terminal-banner.ok .terminal-icon { background: var(--success-subtle); color: var(--success); }
+.terminal-banner.bad .terminal-icon { background: var(--danger-subtle); color: var(--danger); }
+.terminal-banner strong,
+.terminal-banner small { display: block; }
+.terminal-banner strong {
+    margin-bottom: 2px;
+    color: var(--text-primary);
+    font-size: 0.82rem;
+}
+.terminal-banner small {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+}
+.exec-actions {
+    margin-top: 0 !important;
+    gap: 8px !important;
+}
+.exec-actions .btn {
+    min-width: 0 !important;
+    padding: 8px 13px !important;
+    font-size: 0.8rem !important;
+}
+
+@media (max-width: 720px) {
+    .exec-current,
+    .exec-workers { min-height: 0 !important; }
+    .yk-task-head { align-items: flex-start; }
+    .yk-task-card .cur-name { white-space: normal; }
+}
+
+/* ============================================================
+   接入参数页收口：表单以两行三列呈现，操作紧随表单；
+   不再为了配合右侧说明栏而强行拉高左侧卡片。
+   ============================================================ */
+.yk-config {
+    align-items: start !important;
+}
+.yk-config > .cfg-card {
+    align-self: start !important;
+    justify-content: flex-start !important;
+    gap: 14px !important;
+}
+.cfg-card > .muted {
+    max-width: 62ch;
+    margin-bottom: 2px !important;
+    color: var(--text-secondary) !important;
+    line-height: 1.55;
+}
+
+/* 六项认证参数严格排为两行，消除“会话 ID”单独落在第三行的空洞。 */
+.cfg-grid.cfg-auth {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 11px 12px !important;
+    margin: 0 !important;
+    padding: 13px !important;
+    border: 1px solid var(--hairline) !important;
+    border-radius: var(--radius-md, 10px) !important;
+    background: var(--surface-secondary) !important;
+}
+.cfg-grid.cfg-auth > label,
+.cfg-grid.cfg-auth > label:nth-child(4),
+.cfg-grid.cfg-auth > label:nth-child(5) {
+    grid-column: span 2 !important;
+}
+.cfg-grid.cfg-auth input,
+.cfg-grid.cfg-auth select {
+    width: 100%;
+    min-width: 0;
+    height: 36px;
+    box-sizing: border-box;
+}
+.cfg-grid.cfg-auth select {
+    appearance: auto;
+    padding: 7px 10px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--surface-main);
+    color: var(--text-primary);
+    font: 0.82rem var(--font-sans, sans-serif);
+    outline: none;
+}
+.cfg-grid.cfg-auth select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+
+/* 参数折叠区与操作区成为同一个连贯的表单尾部。 */
+.run-params {
+    width: 100%;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+.cfg-actions {
+    width: 100%;
+    margin-top: 0 !important;
+    padding-top: 12px;
+    border-top: 1px solid var(--hairline);
+}
+.cfg-actions .btn {
+    min-height: 36px;
+}
+
+/* 右侧指引减少“文字堆叠”感，代码与注意事项各有明确落点。 */
+.yk-side { gap: 10px !important; }
+.side-card { padding: 15px 16px !important; }
+.side-card h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 11px !important;
+}
+.side-card h4::after {
+    content: '';
+    height: 1px;
+    flex: 1;
+    background: var(--hairline);
+}
+.side-steps { gap: 12px !important; }
+.side-steps li { padding-left: 32px !important; }
+.side-steps span { line-height: 1.5 !important; }
+.g-tip {
+    margin: 10px 0 0 !important;
+    padding-top: 9px;
+    border-top: 1px solid var(--hairline);
+    color: var(--text-tertiary) !important;
+    line-height: 1.45;
+}
+.g-flow { gap: 6px !important; }
+
+/* 空闲时没有可读日志，不让空终端抢占配置页高度。分析开始后会自动恢复。 */
+body[data-view="idle"] .yk-logs {
+    display: none !important;
+}
+
+@media (max-width: 760px) {
+    .cfg-grid.cfg-auth > label,
+    .cfg-grid.cfg-auth > label:nth-child(4),
+    .cfg-grid.cfg-auth > label:nth-child(5) {
+        grid-column: span 3 !important;
+    }
+}
+@media (max-width: 460px) {
+    .cfg-grid.cfg-auth { padding: 11px !important; }
+    .cfg-grid.cfg-auth > label,
+    .cfg-grid.cfg-auth > label:nth-child(4),
+    .cfg-grid.cfg-auth > label:nth-child(5) {
+        grid-column: span 6 !important;
+    }
+    .cfg-actions { flex-direction: column; }
+    .cfg-actions .btn { width: 100%; }
+}
+
+/* 可选的凭据持久化开关：与认证字段相邻，但视觉上明确标识为敏感选项。 */
+.cfg-credential-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    width: 100%;
+    padding: 9px 11px;
+    box-sizing: border-box;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-sm, 8px);
+    background: var(--warning-subtle);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.cfg-credential-option input {
+    width: 15px;
+    height: 15px;
+    margin: 2px 0 0;
+    accent-color: var(--accent);
+}
+.cfg-credential-option span { display: flex; flex-direction: column; gap: 2px; }
+.cfg-credential-option b { color: var(--text-primary); font-size: 0.78rem; }
+.cfg-credential-option small { color: var(--text-secondary); font-size: 0.7rem; line-height: 1.4; }

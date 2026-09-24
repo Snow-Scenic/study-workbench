@@ -96,12 +96,19 @@ def _apply_dwm_attributes(hwnd, is_dark=False):
             ctypes.byref(backdrop), ctypes.sizeof(backdrop)
         )
 
-        # 4. 启用任务栏动画与最小化/最大化控制样式 (WS_MAXIMIZEBOX = 0x00010000, WS_MINIMIZEBOX = 0x00020000)
-        # 注意：杜绝启用 WS_THICKFRAME (0x00040000)，彻底消除 DWM 在无边框窗口顶部强制注入的 6-7px 非客户区条带
+        # 4. 只保留最小化/最大化能力。pywebview 的无边框窗口若启用
+        # WS_THICKFRAME，会把客户区控件误判成非客户区，导致下拉框等控件
+        # 无法点击。尺寸调整由前端边缘手柄显式处理。
         GWL_STYLE = -16
+        WS_MAXIMIZEBOX = 0x00010000
+        WS_MINIMIZEBOX = 0x00020000
+        WS_THICKFRAME = 0x00040000
         user32 = ctypes.windll.user32
         style = user32.GetWindowLongW(hwnd, GWL_STYLE)
-        user32.SetWindowLongW(hwnd, GWL_STYLE, (style & ~0x00040000) | 0x00010000 | 0x00020000)
+        user32.SetWindowLongW(
+            hwnd, GWL_STYLE,
+            (style & ~WS_THICKFRAME) | WS_MAXIMIZEBOX | WS_MINIMIZEBOX
+        )
         user32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0027)
     except Exception:
         # Win10 或更早版本不支持这些属性，静默降级
@@ -153,75 +160,39 @@ class DesktopApi:
         global _current_hwnd
         if _current_hwnd:
             _set_titlebar_dark_mode(_current_hwnd, bool(is_dark))
-    def start_resize(self, edge):
-        """窗口边缘拖拽缩放（无边框沉浸模式下的平滑缩放调度）"""
-        global _current_hwnd
-        if not _current_hwnd:
-            return False
-        user32 = ctypes.windll.user32
+    def resize_window(self, width, height, edge):
+        """通过 pywebview 的公开窗口 API 调整尺寸。
 
-        class _POINT(ctypes.Structure):
-            _fields_ = [('x', ctypes.c_long), ('y', ctypes.c_long)]
-
-        class _RECT(ctypes.Structure):
-            _fields_ = [('left', ctypes.c_long), ('top', ctypes.c_long),
-                        ('right', ctypes.c_long), ('bottom', ctypes.c_long)]
-
-        try:
-            start_pt = _POINT()
-            user32.GetCursorPos(ctypes.byref(start_pt))
-            orig_rect = _RECT()
-            user32.GetWindowRect(_current_hwnd, ctypes.byref(orig_rect))
-            orig_w = orig_rect.right - orig_rect.left
-            orig_h = orig_rect.bottom - orig_rect.top
-
-            def _resize_worker():
-                # 持续监听鼠标左键按住状态 (0x01)
-                while (user32.GetAsyncKeyState(0x01) & 0x8000):
-                    cur_pt = _POINT()
-                    user32.GetCursorPos(ctypes.byref(cur_pt))
-                    dx = cur_pt.x - start_pt.x
-                    dy = cur_pt.y - start_pt.y
-
-                    new_x = orig_rect.left
-                    new_y = orig_rect.top
-                    new_w = orig_w
-                    new_h = orig_h
-
-                    if 'right' in edge:
-                        new_w = max(MIN_WIDTH, orig_w + dx)
-                    elif 'left' in edge:
-                        clamped_w = max(MIN_WIDTH, orig_w - dx)
-                        new_x = orig_rect.right - clamped_w
-                        new_w = clamped_w
-
-                    if 'bottom' in edge:
-                        new_h = max(MIN_HEIGHT, orig_h + dy)
-                    elif 'top' in edge:
-                        clamped_h = max(MIN_HEIGHT, orig_h - dy)
-                        new_y = orig_rect.bottom - clamped_h
-                        new_h = clamped_h
-
-                    user32.SetWindowPos(_current_hwnd, 0, new_x, new_y, new_w, new_h, 0x0004)
-                    time.sleep(0.01)
-
-            threading.Thread(target=_resize_worker, daemon=True).start()
-            return True
-        except Exception:
-            return False
-
-    def drag_window(self):
-        """拖拽顶栏移动窗口（原生交给 Windows 窗口管理器驱动）"""
-        global _current_hwnd
-        if not _current_hwnd:
+        由前端按动画帧合并鼠标变化；这里使用 pywebview 的逻辑像素和
+        FixPoint，因此多显示器、缩放比例及左/上边缘的固定端都由宿主处理。
+        """
+        if not self._window:
             return False
         try:
-            ctypes.windll.user32.ReleaseCapture()
-            ctypes.windll.user32.SendMessageW(_current_hwnd, 0x00A1, 2, 0) # 2 = HTCAPTION
+            from webview.window import FixPoint
+
+            fixed_edges = {
+                'left': FixPoint.EAST,
+                'right': FixPoint.NORTH | FixPoint.WEST,
+                'top': FixPoint.SOUTH,
+                'bottom': FixPoint.NORTH | FixPoint.WEST,
+                'top-left': FixPoint.EAST | FixPoint.SOUTH,
+                'top-right': FixPoint.WEST | FixPoint.SOUTH,
+                'bottom-left': FixPoint.EAST | FixPoint.NORTH,
+                'bottom-right': FixPoint.WEST | FixPoint.NORTH,
+            }
+            fix_point = fixed_edges.get(str(edge).lower())
+            if fix_point is None:
+                return False
+
+            width = max(MIN_WIDTH, int(width))
+            height = max(MIN_HEIGHT, int(height))
+            self._window.resize(width, height, fix_point)
             return True
+        except (TypeError, ValueError, OverflowError):
+            return False
         except Exception:
-            pass
-        return False
+            return False
 
     def log_error(self, message):
         """记录前端异常到日志文件，方便排查"""
@@ -251,13 +222,42 @@ def _load_window_state():
         if os.path.isfile(WINDOW_STATE_FILE):
             with open(WINDOW_STATE_FILE, 'r', encoding='utf-8') as f:
                 state = json.load(f)
-            # 基础合法性校验
-            if (isinstance(state.get('width'), int) and state['width'] >= MIN_WIDTH and
-                    isinstance(state.get('height'), int) and state['height'] >= MIN_HEIGHT):
+            # 尺寸和位置必须都合法。异常缩放或显示器布局变化可能会把坐标
+            # 持久化到虚拟桌面之外，不能在下次启动时继续把窗口恢复到屏幕外。
+            if (isinstance(state.get('x'), int) and isinstance(state.get('y'), int) and
+                    isinstance(state.get('width'), int) and state['width'] >= MIN_WIDTH and
+                    isinstance(state.get('height'), int) and state['height'] >= MIN_HEIGHT and
+                    _window_state_is_visible(state)):
                 return state
     except Exception:
         pass
     return None
+
+
+def _window_state_is_visible(state):
+    """确认保存的窗口至少有一小部分落在 Windows 虚拟桌面内。"""
+    try:
+        user32 = ctypes.windll.user32
+        SM_XVIRTUALSCREEN = 76
+        SM_YVIRTUALSCREEN = 77
+        SM_CXVIRTUALSCREEN = 78
+        SM_CYVIRTUALSCREEN = 79
+        left = user32.GetSystemMetrics(SM_XVIRTUALSCREEN)
+        top = user32.GetSystemMetrics(SM_YVIRTUALSCREEN)
+        right = left + user32.GetSystemMetrics(SM_CXVIRTUALSCREEN)
+        bottom = top + user32.GetSystemMetrics(SM_CYVIRTUALSCREEN)
+
+        # 留出 96px 可见区域，避免只剩 1px 时用户仍无法把窗口拖回。
+        visible_margin = 96
+        return (
+            state['x'] < right - visible_margin and
+            state['x'] + state['width'] > left + visible_margin and
+            state['y'] < bottom - visible_margin and
+            state['y'] + state['height'] > top + visible_margin
+        )
+    except Exception:
+        # 读取显示器信息失败时不阻止正常启动，由 pywebview 自行恢复位置。
+        return True
 
 
 def _save_window_state(window):
@@ -372,17 +372,6 @@ _DISABLE_BROWSER_JS = """
             }).catch(function() {});
         }
     };
-    window.desktopStartResize = function(edge) {
-        if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.start_resize === 'function') {
-            window.pywebview.api.start_resize(edge);
-        }
-    };
-    window.desktopDragWindow = function() {
-        if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.drag_window === 'function') {
-            window.pywebview.api.drag_window();
-        }
-    };
-
     console.log('[StudyWorkbench] Desktop mode activated');
 })();
 """
@@ -432,6 +421,7 @@ def main():
         y=win_y,
         min_size=(MIN_WIDTH, MIN_HEIGHT),
         frameless=True,         # 无边框沉浸模式：无缝整合 WinUI 3 标题栏，彻底消除多余系统边框
+        easy_drag=False,        # 禁用 pywebview 的“全窗口鼠标拖动”，标题栏移动由 drag_window 显式处理
         text_select=True,       # 允许文本选择（题目需要复制）
         zoomable=False,         # 禁止 Ctrl+滚轮缩放
         js_api=api,             # 注册 Python-JS 双向桥梁

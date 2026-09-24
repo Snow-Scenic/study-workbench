@@ -12,6 +12,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from portable_state import PortableStateStore
 from server import MyHandler, _find_bank_file, _safe_join, _scan_question_banks
 
 
@@ -165,16 +166,28 @@ def test_http_favicon(base_url):
     assert status in (200, 404)  # 仓库含图标时为 200
 
 
-def test_http_root_serves_hub(base_url):
+def test_http_root_serves_desktop_app(base_url):
     status, body = get_status(base_url + "/")
     assert status == 200
-    assert "学习工作台".encode("utf-8") in body
+    assert b"bankSelectScreen" in body
 
 
 def test_http_quiz_serves_quiz_app(base_url):
     status, body = get_status(base_url + "/quiz")
     assert status == 200
     assert b"bankSelectScreen" in body
+
+
+def test_http_quiz_injects_portable_state(tmp_path, monkeypatch, base_url):
+    import server
+    store = PortableStateStore(str(tmp_path / 'study_workbench_data.json'))
+    store.save_storage({'quiz_bankName': '便携题库'})
+    monkeypatch.setattr(server, '_PORTABLE_STATE', store)
+    status, body = get_status(base_url + '/quiz')
+    assert status == 200
+    html = body.decode('utf-8')
+    assert '{{PORTABLE_STATE_JSON}}' not in html
+    assert '便携题库' in html
 
 
 # ---------- POST /api/banks/save（导入题库持久化） ----------
@@ -253,6 +266,17 @@ def test_http_save_bank_accepts_large_bank(tmp_path, monkeypatch, base_url):
     status, resp = _post_json(base_url + "/api/banks/save", data)
     assert status == 200 and resp.get("ok") is True
     assert resp.get("count") == 600
+
+
+def test_http_portable_state_writes_only_whitelisted_values(tmp_path, monkeypatch, base_url):
+    import server
+    store = PortableStateStore(str(tmp_path / 'study_workbench_data.json'))
+    monkeypatch.setattr(server, '_PORTABLE_STATE', store)
+    status, resp = _post_json(base_url + '/api/portable-state', {
+        'storage': {'quiz_bankName': '下次继续', 'unexpected': 'discard'},
+    })
+    assert status == 200 and resp['saved'] == 1
+    assert store.load_storage() == {'quiz_bankName': '下次继续'}
 
 
 # ---------- 前端修复的回归锁（2026-08-23 五项体验修复） ----------
